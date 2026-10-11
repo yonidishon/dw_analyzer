@@ -1,0 +1,47 @@
+"""Command line entry point: dw-analyze <file.gpx>."""
+import argparse
+import sys
+from pathlib import Path
+
+from dw_analyzer.analysis import analyze
+from dw_analyzer.io import GPXError
+from dw_analyzer.report.html import render_html
+from dw_analyzer.runs import MERGE_GAP_S, MIN_DURATION_S, THRESHOLD_KMH
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="dw-analyze", description="Analyse a downwind foiling GPX track.")
+    p.add_argument("gpx", type=Path, help="GPX file")
+    p.add_argument("--threshold", type=float, default=THRESHOLD_KMH, help="run speed threshold in km/h (default %(default)s)")
+    p.add_argument("--min-duration", type=int, default=MIN_DURATION_S, help="minimum run length in seconds (default %(default)s)")
+    p.add_argument("--merge-gap", type=int, default=MERGE_GAP_S, help="merge runs separated by fewer seconds than this (default %(default)s)")
+    p.add_argument("--wind-dir", type=float, default=None, help="direction the wind comes from, degrees (default: Open-Meteo, then course)")
+    p.add_argument("--out", type=Path, default=Path("out"), help="output directory (default %(default)s)")
+    p.add_argument("--no-pdf", action="store_true", help="only write the HTML report")
+    return p
+
+
+def main(argv=None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.threshold <= 0:
+        parser.error("--threshold must be positive")
+    if args.min_duration < 1:
+        parser.error("--min-duration must be at least 1")
+    if args.merge_gap < 0:
+        parser.error("--merge-gap must not be negative")
+
+    try:
+        a = analyze(args.gpx, args.threshold, args.min_duration, args.merge_gap, args.wind_dir)
+    except (GPXError, OSError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
+    args.out.mkdir(parents=True, exist_ok=True)
+    html = render_html(a, args.out / f"{args.gpx.stem}.html")
+    print(html)
+    if not args.no_pdf:
+        from dw_analyzer.report.pdf import render_pdf  # WeasyPrint import is slow; skip it when not needed
+
+        print(render_pdf(a, args.out / f"{args.gpx.stem}.pdf"))
+    return 0
