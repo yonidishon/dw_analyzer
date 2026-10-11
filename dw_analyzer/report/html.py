@@ -49,7 +49,7 @@ def track_payload(track) -> dict:
 
 def payload(a) -> dict:
     return {
-        "meta": {"title": title(a), "wind_label": wind_label(a.wind), "tz": a.tz},
+        "meta": {"title": title(a), "wind_label": wind_label(a.wind), "downwind_deg": a.wind.downwind_deg, "tz": a.tz},
         "params": {"threshold_kmh": a.threshold_kmh, "min_duration_s": a.min_duration_s, "merge_gap_s": a.merge_gap_s},
         "track": track_payload(a.track),
         "overall": clean(a.overall),

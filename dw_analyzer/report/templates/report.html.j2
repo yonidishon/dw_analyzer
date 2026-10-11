@@ -40,6 +40,38 @@
 </section>
 <section><h2>Speed and heart rate</h2><div id="timeline"></div></section>
 <section><h2>Splits</h2><div id="splits" class="table-wrap"></div></section>
+<section><h2>Run analysis</h2>
+  <div class="analysis">
+    <div>
+      <div class="plot-controls">
+        <label>X <select id="scatter-x">
+          <option value="pace_s_per_km">Pace</option>
+          <option value="duration_s">Duration</option>
+          <option value="distance_m">Distance</option>
+        </select></label>
+        <label>Y <select id="scatter-y">
+          <option value="hr_avg">HR avg</option>
+          <option value="hr_max">HR max</option>
+          <option value="back_up_s">Back up</option>
+        </select></label>
+      </div>
+      <div id="scatter"></div>
+    </div>
+    <div>
+      <div class="plot-controls">
+        <label>Radius <select id="polar-r">
+          <option value="pace_s_per_km">Pace</option>
+          <option value="hr_avg">HR avg</option>
+          <option value="hr_max">HR max</option>
+          <option value="vmg_kmh">VMG</option>
+          <option value="distance_m">Distance</option>
+          <option value="duration_s">Duration</option>
+        </select></label>
+      </div>
+      <div id="polar"></div>
+    </div>
+  </div>
+</section>
 <script>const DATA = {{ data_json | safe }};</script>
 <script>{{ runs_js | safe }}</script>
 <script>{{ report_js | safe }}</script>

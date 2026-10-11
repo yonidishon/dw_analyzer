@@ -49,3 +49,12 @@ def test_html_timezone_selector_and_tiles(tmp_path, sample_path):
     assert 'class="course-runs"' in text
     js = static_text("report.js")
     assert "carto-voyager" in js and "open-street-map" not in js
+
+
+def test_html_run_analysis_tools(tmp_path):
+    gpx = write_gpx(tmp_path / "t.gpx", make_raw([6.0] * 120), extensions=False)
+    a = analyze(gpx, wind_dir=90)
+    text = render_html(a, tmp_path / "r.html").read_text(encoding="utf-8")
+    assert embedded_data(text)["meta"]["downwind_deg"] == a.wind.downwind_deg == 270
+    for el in ('id="scatter-x"', 'id="scatter-y"', 'id="polar-r"', 'id="scatter"', 'id="polar"'):
+        assert el in text

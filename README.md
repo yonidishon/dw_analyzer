@@ -40,6 +40,15 @@ Writes `out/<gpx name>.html` and `out/<gpx name>.pdf`.
 
 A run is a period where speed is above the threshold for at least `--min-duration` seconds. Short dips below the threshold (under `--merge-gap` seconds) are merged into the run. In the HTML report the threshold slider re-detects runs and updates the runs table, run statistics, map and timeline. Click a runs table header (#, duration, distance, pace, max 5 s, HR avg, HR max, back up) to sort by it; click again to reverse. The splits table sorts the same way by #, duration, avg km/h, pace, max 5 s, HR avg and HR max.
 
+The speed and heart rate graph also shows cumulative distance (km, right-hand axis); hovering it shows the distance as a percentage of the whole session.
+
+At the bottom of the HTML report, the run analysis section has two plots where each dot is a run (both follow the threshold slider):
+
+- a scatter plot with the x-axis chosen from pace, duration or distance and the y-axis from HR avg, HR max or back up time
+- a polar plot (north up, clockwise) where the angle is the run's mean heading and the radius is chosen from pace, HR avg, HR max, VMG, distance or duration; a fixed arrow from the centre points downwind
+
+These plots are HTML only.
+
 ## Metrics
 
 All speeds are in km/h. Pace is in min/km.

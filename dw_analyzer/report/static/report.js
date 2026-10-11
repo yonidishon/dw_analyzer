@@ -52,6 +52,13 @@
   }
   const hasHr = tr.hr.some((v) => !missing(v));
 
+  // Cumulative distance (km) per sample and as % of the session distance
+  const cumKm = [];
+  tr.step.reduce((acc, v, i) => (cumKm[i] = acc + (missing(v) ? 0 : v)), 0);
+  const totalM = cumKm[n - 1];
+  const cumPct = cumKm.map((m) => (totalM > 0 ? (100 * m) / totalM : null));
+  cumKm.forEach((m, i) => (cumKm[i] = m / 1000));
+
   const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
 
   function compute() {
@@ -259,6 +266,10 @@
   function renderTimeline() {
     const traces = [{ type: "scatter", mode: "lines", x: times, y: tr.speed, name: "speed (km/h)", line: { color: "#1f77b4", width: 1 } }];
     if (hasHr) traces.push({ type: "scatter", mode: "lines", x: times, y: tr.hr, name: "HR (bpm)", yaxis: "y2", line: { color: "#d62728", width: 1 } });
+    traces.push({
+      type: "scatter", mode: "lines", x: times, y: cumKm, name: "distance (km)", yaxis: "y3", line: { color: "#2ca02c", width: 1 },
+      customdata: cumPct, hovertemplate: "%{y:.2f} km (%{customdata:.1f}% of session)<extra></extra>",
+    });
     const rect = (s, e, fill, opacity) => ({ type: "rect", xref: "x", yref: "paper", x0: times[s], x1: times[e - 1], y0: 0, y1: 1, fillcolor: fill, opacity, line: { width: 0 } });
     const shapes = state.runs.map((r, i) => rect(r.start, r.end, color(i), 0.15));
     shapes.push({ type: "line", xref: "paper", x0: 0, x1: 1, y0: state.threshold, y1: state.threshold, line: { dash: "dash", color: "#555", width: 1 } });
@@ -266,10 +277,85 @@
     Plotly.react(tlEl, traces, {
       height: 320, margin: { l: 50, r: 50, t: 10, b: 40 }, uirevision: "timeline",
       legend: { orientation: "h", y: 1.12 },
-      xaxis: { title: { text: `time (${state.tz})` } },
+      xaxis: { title: { text: `time (${state.tz})` }, domain: [0, 0.94] },
       yaxis: { title: { text: "km/h" } },
       yaxis2: { title: { text: "bpm" }, overlaying: "y", side: "right", showgrid: false },
+      yaxis3: { title: { text: "km" }, overlaying: "y", side: "right", anchor: "free", position: 1, showgrid: false },
       shapes,
+    }, { responsive: true });
+  }
+
+  // Run analysis plots: one dot per run, coloured like the run
+  const FIELDS = {
+    pace_s_per_km: ["Pace (min/km)", (v) => pace(v).replace(" /km", ""), true],
+    duration_s: ["Duration", duration, true],
+    distance_m: ["Distance", dist, false],
+    hr_avg: ["HR avg (bpm)", int, false],
+    hr_max: ["HR max (bpm)", int, false],
+    back_up_s: ["Back up", duration, true],
+    vmg_kmh: ["VMG (km/h)", num, false],
+  };
+  const TICK_STEPS = [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
+
+  // Axis settings for a field; time-like fields (seconds) get m:ss tick labels
+  function axisFor(key, values) {
+    const [label, , timeLike] = FIELDS[key];
+    const axis = { title: { text: label } };
+    if (timeLike && values.length) {
+      const lo = Math.min(...values), hi = Math.max(...values);
+      const step = TICK_STEPS.find((t) => (hi - lo) / t <= 6) || 3600;
+      const tickvals = [];
+      for (let v = Math.floor(lo / step) * step; v <= hi + step; v += step) tickvals.push(v);
+      Object.assign(axis, { tickvals, ticktext: tickvals.map((v) => duration(v)) });
+    }
+    return axis;
+  }
+
+  const fieldText = (key, r) => `${FIELDS[key][0]}: ${FIELDS[key][1](r[key])}`;
+
+  function renderScatter() {
+    const xKey = document.getElementById("scatter-x").value;
+    const yKey = document.getElementById("scatter-y").value;
+    const rows = state.rows.filter((r) => !missing(r[xKey]) && !missing(r[yKey]));
+    Plotly.react("scatter", [{
+      type: "scatter", mode: "markers+text",
+      x: rows.map((r) => r[xKey]), y: rows.map((r) => r[yKey]),
+      text: rows.map((r) => String(r.run)), textposition: "top center",
+      marker: { size: 11, color: rows.map((r) => color(r.run - 1)) },
+      hovertext: rows.map((r) => `Run ${r.run}<br>${fieldText(xKey, r)}<br>${fieldText(yKey, r)}`), hoverinfo: "text",
+    }], {
+      height: 420, margin: { l: 60, r: 20, t: 10, b: 50 }, showlegend: false,
+      xaxis: axisFor(xKey, rows.map((r) => r[xKey])),
+      yaxis: axisFor(yKey, rows.map((r) => r[yKey])),
+    }, { responsive: true });
+  }
+
+  function renderPolar() {
+    const rKey = document.getElementById("polar-r").value;
+    const rows = state.rows.filter((r) => !missing(r[rKey]) && !missing(r.heading_deg));
+    const values = rows.map((r) => r[rKey]);
+    const lo = Math.min(0, ...values);
+    const top = Math.max(0, ...values);
+    const hi = top + 0.1 * (top - lo || 1);
+    const dw = DATA.meta.downwind_deg;
+    const head = hi - 0.12 * (hi - lo);
+    Plotly.react("polar", [{
+      // Static wind arrow from the centre, pointing downwind
+      type: "scatterpolar", mode: "lines", name: `downwind (wind from ${DATA.meta.wind_label})`,
+      r: [lo, hi, null, head, hi, head], theta: [dw, dw, null, dw - 5, dw, dw + 5],
+      line: { color: "#424242", width: 3 }, hoverinfo: "name",
+    }, {
+      type: "scatterpolar", mode: "markers+text", showlegend: false,
+      r: values, theta: rows.map((r) => r.heading_deg),
+      text: rows.map((r) => String(r.run)), textposition: "top center",
+      marker: { size: 11, color: rows.map((r) => color(r.run - 1)) },
+      hovertext: rows.map((r) => `Run ${r.run}<br>Heading: ${deg(r.heading_deg)}<br>${fieldText(rKey, r)}`), hoverinfo: "text",
+    }], {
+      height: 420, margin: { l: 40, r: 40, t: 30, b: 30 }, legend: { orientation: "h", y: -0.05 },
+      polar: {
+        angularaxis: { rotation: 90, direction: "clockwise", dtick: 45 },
+        radialaxis: Object.assign(axisFor(rKey, values), { range: [lo, hi], title: { text: FIELDS[rKey][0] } }),
+      },
     }, { responsive: true });
   }
 
@@ -280,6 +366,8 @@
     renderSplits();
     renderMap();
     renderTimeline();
+    renderScatter();
+    renderPolar();
   }
 
   // Controls
@@ -301,6 +389,10 @@
       state.mapMode = el.value;
       renderAll(false);
     }));
+
+  document.getElementById("scatter-x").addEventListener("change", renderScatter);
+  document.getElementById("scatter-y").addEventListener("change", renderScatter);
+  document.getElementById("polar-r").addEventListener("change", renderPolar);
 
   const tzSelect = document.getElementById("tz");
   const zones = new Set(typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : []);

@@ -13,7 +13,9 @@ h2 { font-size: 17px; margin: 24px 0 8px; }
 .course-runs #runs th, .course-runs #runs td { padding: 3px 5px; }
 .course-runs #runs th { white-space: normal; vertical-align: bottom; }
 .course-runs #runs thead th { position: sticky; top: 0; background: var(--bg); }
-@media (max-width: 1200px) { .course-runs { grid-template-columns: minmax(0, 1fr); } }
+.analysis { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.plot-controls { display: flex; gap: 16px; margin-bottom: 4px; }
+@media (max-width: 1200px) { .course-runs, .analysis { grid-template-columns: minmax(0, 1fr); } }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .tile { background: var(--card); border-radius: 8px; padding: 8px 12px; }
 .tile .label { display: block; color: var(--muted); font-size: 12px; }
