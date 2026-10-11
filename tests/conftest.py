@@ -7,4 +7,6 @@ SAMPLE = Path(__file__).resolve().parents[1] / "sample_data" / "activity_2465197
 
 @pytest.fixture
 def sample_path():
+    if not SAMPLE.exists():  # sample_data/ is kept out of the public repo
+        pytest.skip(f"sample GPX not present: {SAMPLE}")
     return SAMPLE

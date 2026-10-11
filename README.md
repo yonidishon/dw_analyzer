@@ -15,7 +15,7 @@ uv pip install --python ~/venvs/dw_analyzer_venv -e ".[dev]"
 ## Usage
 
 ```bash
-~/venvs/dw_analyzer_venv/bin/dw-analyze sample_data/activity_24651972498.gpx --out out/
+~/venvs/dw_analyzer_venv/bin/dw-analyze path/to/session.gpx --out out/
 ```
 
 Writes `out/<gpx name>.html` and `out/<gpx name>.pdf`.
@@ -62,4 +62,4 @@ VMG downwind is `speed * cos(heading - downwind direction)`.
 ~/venvs/dw_analyzer_venv/bin/pytest
 ```
 
-The JavaScript parity test needs Node.js and is skipped without it.
+The JavaScript parity test needs Node.js and is skipped without it. Tests that use the sample session (`sample_data/activity_24651972498.gpx`, not included in this repo) are skipped when the file is missing.
