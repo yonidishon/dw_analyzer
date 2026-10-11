@@ -56,8 +56,21 @@ def test_html_run_analysis_tools(tmp_path):
     a = analyze(gpx, wind_dir=90)
     text = render_html(a, tmp_path / "r.html").read_text(encoding="utf-8")
     assert embedded_data(text)["meta"]["downwind_deg"] == a.wind.downwind_deg == 270
-    for el in ('id="scatter-x"', 'id="scatter-y"', 'id="polar-r"', 'id="scatter"', 'id="polar"'):
+    for el in ('id="scatter-x"', 'id="scatter-y"', 'id="polar-r"'):
         assert el in text
+    assert "<h2>Run analysis" not in text
+    assert "DWA" in text
+    group = text[text.index('id="course-runs"'):text.index("<h2>Speed and heart rate")]
+    ids = ["map", "runs", "scatter", "polar", "zones", "corr", "fatigue", "angle"]
+    positions = [group.index(f'id="{i}"') for i in ids]
+    assert positions == sorted(positions)
+
+
+def test_html_min_run_input(tmp_path):
+    gpx = write_gpx(tmp_path / "t.gpx", make_raw([6.0] * 120))
+    text = render_html(analyze(gpx, wind_dir=0), tmp_path / "r.html").read_text(encoding="utf-8")
+    assert 'id="min-run"' in text and 'value="60"' in text
+    assert text.index('id="min-run"') < text.index('id="max-hr"')
 
 
 def test_html_max_hr_input_left_of_timezone(tmp_path):

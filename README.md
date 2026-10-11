@@ -43,10 +43,16 @@ A run is a period where speed is above the threshold for at least `--min-duratio
 
 The speed and heart rate graph also shows cumulative distance (km, right-hand axis); hovering the graph shows the values of all lines at that time, with the distance also as a percentage of the whole session.
 
-At the bottom of the HTML report, the run analysis section has two plots where each dot is a run (both follow the threshold slider):
+In the HTML report, the "Course and runs" card holds the map on the left and, on the right, the runs table with six plots below it in two rows of three; the map grows to the same height. All plots follow the threshold slider. The run-based plots only use runs at least "Min run for plots" seconds long (banner input, default 60, 0 = all runs):
 
-- a scatter plot with the x-axis chosen from pace, duration or distance and the y-axis from HR avg, HR max or back up time, titled with the Pearson correlation (r) of the two axes
-- a polar plot (north up, clockwise) where the angle is the run's mean heading and the radius is chosen from pace, HR avg, HR max, VMG, distance or duration; a fixed arrow from the centre points downwind. The plot zooms to the sector holding the run headings and the downwind direction, and its title shows the correlation between the radius and the runs' off downwind angle
+- **Run scatter:** each dot is a run. X: pace, duration, distance, or the previous run's duration, distance or HR max. Y: HR avg, HR max, back up time, HR peak after or HR drop 60 s. Shows a least-squares trend line and, in the title, Pearson r with its 95% confidence interval and p-value, Spearman rank correlation and n.
+- **Run polar:** north up, clockwise; angle = run mean heading, radius chosen from pace, HR avg, HR max, VMG, distance, duration, HR peak after or HR drop 60 s. A fixed arrow from the centre points downwind; the plot zooms to the sector holding the runs and the downwind direction; the title shows the correlation between the radius and the runs' off downwind angle.
+- **Time in HR zones:** share of foiling time and of whole session time in Z0-Z5 (follows Max HR).
+- **Correlation matrix:** Pearson r between run #, pace, duration, distance, max 5 s, off downwind, VMG, HR avg, HR max, back up, HR peak after and HR drop 60 s. Click a cell to load that pair into the run scatter (when the pair fits its X and Y choices).
+- **Fatigue and efficiency:** pace and HR avg per run # with trend lines; the title gives the efficiency trend (avg km/h per 100 bpm, % change per run).
+- **Speed by angle off downwind:** average and best speed of the per-second samples inside runs, in 5° bins of signed angle off downwind (0° = downwind, + = right of downwind); the bin with the best average VMG is starred.
+
+HR peak after = highest HR in the 60 s after a run ends (cut at the next run start); HR drop 60 s = that peak minus the HR 60 s later (blank if the next run has started by then).
 
 These plots are HTML only.
 

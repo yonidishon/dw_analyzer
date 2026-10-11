@@ -59,11 +59,12 @@
   const cumPct = cumKm.map((m) => (totalM > 0 ? (100 * m) / totalM : null));
   cumKm.forEach((m, i) => (cumKm[i] = m / 1000));
 
-  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
+  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, minRun: 60, highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
 
   function compute() {
     state.runs = DW.detectRuns(tr.speed, state.threshold, DATA.params.min_duration_s, DATA.params.merge_gap_s, tr.gap);
     state.rows = DW.runRows(tr, state.runs);
+    DWA.runExtras(tr, state.runs, state.rows);
     for (const r of state.rows) r.distance_pct = DATA.overall.distance_m > 0 ? (100 * r.distance_m) / DATA.overall.distance_m : null;
     state.overall = Object.assign({}, DATA.overall, DW.foilStats(tr, state.runs));
     state.highlight = null;
@@ -265,8 +266,20 @@
     return traces;
   }
 
+  // Side by side, the map is as tall as the right column (table + plots); stacked, it has a fixed height
+  const MAP_H = 560;
+  const courseRuns = document.getElementById("course-runs");
+  const rightCol = document.getElementById("right");
+  const stacked = () => getComputedStyle(courseRuns).gridTemplateColumns.trim().split(/\s+/).length === 1;
+  const mapHeight = () => (stacked() ? MAP_H : Math.max(rightCol.offsetHeight, MAP_H));
+
+  function syncMapHeight() {
+    const h = mapHeight();
+    if (mapEl.offsetHeight !== h && mapEl.data) Plotly.relayout(mapEl, { height: h });
+  }
+
   function renderMap() {
-    const h = 560;
+    const h = mapHeight();
     const w = mapEl.clientWidth || 800;
     Plotly.react(mapEl, mapTraces(), {
       height: h, margin: { l: 0, r: 0, t: 0, b: 0 }, showlegend: false, uirevision: "map",
@@ -299,17 +312,35 @@
     }, { responsive: true });
   }
 
-  // Run analysis plots: one dot per run, coloured like the run
+  // Run analysis plots: one dot per run, coloured like the run. Runs shorter than state.minRun are left out.
   const FIELDS = {
+    run: ["Run #", String, false],
     pace_s_per_km: ["Pace (min/km)", (v) => pace(v).replace(" /km", ""), true],
     duration_s: ["Duration", duration, true],
     distance_m: ["Distance", dist, false],
+    max_speed_kmh: ["Max 5 s (km/h)", num, false],
+    angle_off_deg: ["Off downwind", deg, false],
+    vmg_kmh: ["VMG (km/h)", num, false],
     hr_avg: ["HR avg (bpm)", int, false],
     hr_max: ["HR max (bpm)", int, false],
     back_up_s: ["Back up", duration, true],
-    vmg_kmh: ["VMG (km/h)", num, false],
+    prev_duration_s: ["Prev run duration", duration, true],
+    prev_distance_m: ["Prev run distance", dist, false],
+    prev_hr_max: ["Prev run HR max (bpm)", int, false],
+    hr_peak_after: ["HR peak after (bpm)", int, false],
+    hr_drop_60s: ["HR drop 60 s (bpm)", int, false],
   };
   const TICK_STEPS = [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
+  const PLOT_H = 340;
+  const PLOT_FONT = { size: 10 };
+  const TITLE_FONT = { size: 11 };
+  const ZONE_BAR_COLORS = ["#90a4ae", "#42a5f5", "#66bb6a", "#ffca28", "#ffa726", "#ef5350"];
+
+  const plotRows = () => state.rows.filter((r) => r.duration_s >= state.minRun);
+  const plotRuns = () => state.runs.filter((r) => r.end - r.start >= state.minRun);
+  const finite = (rows, ...keys) => rows.filter((r) => keys.every((k) => !missing(r[k])));
+  const fixed = (v, d = 2) => (v === null || v === undefined ? "-" : v.toFixed(d));
+  const pText = (p) => (p === null || p === undefined ? "-" : p < 0.001 ? "<0.001" : p.toFixed(p < 0.01 ? 3 : 2));
 
   // Axis settings for a field; time-like fields (seconds) get m:ss tick labels
   function axisFor(key, values) {
@@ -334,52 +365,66 @@
   }
 
   // Smallest compass arc holding all angles, padded; as a Plotly sector (counterclockwise screen degrees, 0 = east)
-  function polarSector(angles) {
+  function polarSector(angles, pad = 10) {
     const a = [...new Set(angles.map((v) => ((v % 360) + 360) % 360))].sort((x, y) => x - y);
     if (a.length < 2) return [0, 360];
     let gap = 360 - a[a.length - 1] + a[0], start = a[0];
     for (let i = 1; i < a.length; i++) {
       if (a[i] - a[i - 1] > gap) { gap = a[i] - a[i - 1]; start = a[i]; }
     }
-    const span = 360 - gap + 20;
+    const span = 360 - gap + 2 * pad;
     if (span > 330) return [0, 360];
-    // Compass heading h is drawn at screen angle 90 - h (rotation 90, clockwise)
-    const end = start - 10 + span;
+    // Compass angle h is drawn at screen angle 90 - h (rotation 90, clockwise)
+    const end = start - pad + span;
     return [90 - end, 90 - end + span];
   }
+
+  // Dashed least-squares line over the x range of the points, or null
+  function trendTrace(xs, ys, extra) {
+    const fit = DWA.linFit(xs, ys);
+    if (!fit || xs.length < 3) return null;
+    const lo = Math.min(...xs), hi = Math.max(...xs);
+    return Object.assign({
+      type: "scatter", mode: "lines", x: [lo, hi], y: [fit.intercept + fit.slope * lo, fit.intercept + fit.slope * hi],
+      line: { dash: "dash", color: "#616161", width: 1.5 }, hoverinfo: "skip", showlegend: false,
+    }, extra);
+  }
+
+  const empty = (text) => ({ annotations: [{ text, showarrow: false, xref: "paper", yref: "paper", x: 0.5, y: 0.5 }],
+    xaxis: { visible: false }, yaxis: { visible: false } });
 
   function renderScatter() {
     const xKey = document.getElementById("scatter-x").value;
     const yKey = document.getElementById("scatter-y").value;
-    const rows = state.rows.filter((r) => !missing(r[xKey]) && !missing(r[yKey]));
-    Plotly.react("scatter", [{
-      type: "scatter", mode: "markers+text",
-      x: rows.map((r) => r[xKey]), y: rows.map((r) => r[yKey]),
-      text: rows.map((r) => String(r.run)), textposition: "top center",
-      marker: { size: 11, color: rows.map((r) => color(r.run - 1)) },
+    const rows = finite(plotRows(), xKey, yKey);
+    const xs = rows.map((r) => r[xKey]), ys = rows.map((r) => r[yKey]);
+    const s = DWA.corrStats(xs, ys);
+    const traces = [{
+      type: "scatter", mode: "markers+text", x: xs, y: ys,
+      text: rows.map((r) => String(r.run)), textposition: "top center", textfont: PLOT_FONT,
+      marker: { size: 10, color: rows.map((r) => color(r.run - 1)) },
       hovertext: rows.map((r) => `Run ${r.run}<br>${fieldText(xKey, r)}<br>${fieldText(yKey, r)}`), hoverinfo: "text",
-    }], {
-      height: 420, margin: { l: 60, r: 20, t: 40, b: 50 }, showlegend: false,
-      title: { text: corrText(rows.map((r) => r[xKey]), rows.map((r) => r[yKey])), font: { size: 13 } },
-      xaxis: axisFor(xKey, rows.map((r) => r[xKey])),
-      yaxis: axisFor(yKey, rows.map((r) => r[yKey])),
+    }];
+    const trend = trendTrace(xs, ys);
+    if (trend) traces.push(trend);
+    Plotly.react("scatter", traces, {
+      height: PLOT_H, margin: { l: 55, r: 10, t: 45, b: 45 }, showlegend: false, font: PLOT_FONT,
+      title: { font: TITLE_FONT, text: `Pearson r = ${fixed(s.r)} (95% CI ${fixed(s.lo)} to ${fixed(s.hi)}), p = ${pText(s.p)}`
+        + `<br>Spearman ρ = ${fixed(s.rho)} · n = ${s.n}` },
+      xaxis: axisFor(xKey, xs), yaxis: axisFor(yKey, ys),
     }, { responsive: true });
-  }
-
-  function offPairs(rows, key) {
-    const both = rows.filter((r) => !missing(r.angle_off_deg));
-    return [both.map((r) => r[key]), both.map((r) => r.angle_off_deg)];
   }
 
   function renderPolar() {
     const rKey = document.getElementById("polar-r").value;
-    const rows = state.rows.filter((r) => !missing(r[rKey]) && !missing(r.heading_deg));
+    const rows = finite(plotRows(), rKey, "heading_deg");
     const values = rows.map((r) => r[rKey]);
     const lo = Math.min(0, ...values);
     const top = Math.max(0, ...values);
     const hi = top + 0.1 * (top - lo || 1);
     const dw = DATA.meta.downwind_deg;
     const head = hi - 0.12 * (hi - lo);
+    const off = finite(rows, "angle_off_deg");
     Plotly.react("polar", [{
       // Static wind arrow from the centre, pointing downwind
       type: "scatterpolar", mode: "lines", name: `downwind (wind from ${DATA.meta.wind_label})`,
@@ -388,18 +433,149 @@
     }, {
       type: "scatterpolar", mode: "markers+text", showlegend: false,
       r: values, theta: rows.map((r) => r.heading_deg),
-      text: rows.map((r) => String(r.run)), textposition: "top center",
-      marker: { size: 11, color: rows.map((r) => color(r.run - 1)) },
+      text: rows.map((r) => String(r.run)), textposition: "top center", textfont: PLOT_FONT,
+      marker: { size: 10, color: rows.map((r) => color(r.run - 1)) },
       hovertext: rows.map((r) => `Run ${r.run}<br>Heading: ${deg(r.heading_deg)}<br>${fieldText(rKey, r)}`), hoverinfo: "text",
     }], {
-      height: 420, margin: { l: 40, r: 40, t: 40, b: 30 }, legend: { orientation: "h", y: -0.05 },
-      title: { text: `${FIELDS[rKey][0]} vs off downwind angle: ${corrText(...offPairs(rows, rKey))}`, font: { size: 13 } },
+      height: PLOT_H, margin: { l: 30, r: 30, t: 45, b: 30 }, legend: { orientation: "h", y: -0.05 }, font: PLOT_FONT,
+      title: { font: TITLE_FONT, text: `${FIELDS[rKey][0]} vs off downwind angle<br>${corrText(off.map((r) => r[rKey]), off.map((r) => r.angle_off_deg))}` },
       polar: {
         sector: polarSector([...rows.map((r) => r.heading_deg), dw]),
         angularaxis: { rotation: 90, direction: "clockwise", dtick: 45 },
         radialaxis: Object.assign(axisFor(rKey, values), { range: [lo, hi], title: { text: FIELDS[rKey][0] } }),
       },
     }, { responsive: true });
+  }
+
+  function renderZones() {
+    const layout = { height: PLOT_H, margin: { l: 45, r: 10, t: 45, b: 40 }, font: PLOT_FONT, barmode: "group",
+      title: { font: TITLE_FONT, text: `Time in HR zones (max HR ${state.maxHr})` },
+      legend: { orientation: "h", y: -0.15 }, yaxis: { title: { text: "% of time with HR" } } };
+    if (!hasHr) {
+      Plotly.react("zones", [], Object.assign(layout, empty("No heart rate data")), { responsive: true });
+      return;
+    }
+    const z = DWA.zoneTime(tr.hr, state.runs, state.maxHr);
+    const labels = ["Z0", "Z1", "Z2", "Z3", "Z4", "Z5"];
+    const bar = (name, y, pattern) => ({
+      type: "bar", name, x: labels, y, marker: { color: ZONE_BAR_COLORS, pattern: { shape: pattern, fgcolor: "#424242" } },
+      hovertemplate: `${name}<br>%{x}: %{y:.1f}%<extra></extra>`,
+    });
+    Plotly.react("zones", [bar("foiling", z.foiling, ""), bar("whole session", z.session, "/")], layout, { responsive: true });
+  }
+
+  // Variables in the correlation matrix: [field key, short label]
+  const CORR_VARS = [
+    ["run", "Run #"], ["pace_s_per_km", "Pace"], ["duration_s", "Duration"], ["distance_m", "Distance"],
+    ["max_speed_kmh", "Max 5 s"], ["angle_off_deg", "Off downwind"], ["vmg_kmh", "VMG"], ["hr_avg", "HR avg"],
+    ["hr_max", "HR max"], ["back_up_s", "Back up"], ["hr_peak_after", "HR peak after"], ["hr_drop_60s", "HR drop 60 s"],
+  ];
+  const corrEl = document.getElementById("corr");
+
+  function renderCorr() {
+    const rows = plotRows();
+    const labels = CORR_VARS.map(([, l]) => l);
+    const z = [], ns = [];
+    for (const [a] of CORR_VARS) {
+      const zRow = [], nRow = [];
+      for (const [b] of CORR_VARS) {
+        const both = finite(rows, a, b);
+        zRow.push(DW.pearson(both.map((r) => r[a]), both.map((r) => r[b])));
+        nRow.push(both.length);
+      }
+      z.push(zRow);
+      ns.push(nRow);
+    }
+    Plotly.react(corrEl, [{
+      type: "heatmap", x: labels, y: labels, z, customdata: ns, zmin: -1, zmax: 1,
+      colorscale: [[0, "#2166ac"], [0.5, "#f7f7f7"], [1, "#b2182b"]],
+      texttemplate: "%{z:.1f}", textfont: { size: 8 }, colorbar: { thickness: 8, len: 0.8 },
+      hovertemplate: "%{y} vs %{x}<br>r = %{z:.2f}<br>n = %{customdata}<extra></extra>",
+    }], {
+      height: PLOT_H, margin: { l: 80, r: 5, t: 10, b: 80 }, font: { size: 9 },
+      xaxis: { tickangle: -45 }, yaxis: { autorange: "reversed" },
+    }, { responsive: true });
+  }
+
+  // Clicking a matrix cell loads the pair into the run scatter when it maps onto its X and Y options
+  const optionValues = (id) => [...document.getElementById(id).options].map((o) => o.value);
+  function bindCorrClick() {
+    const keyOf = (label) => CORR_VARS.find(([, l]) => l === label)[0];
+    corrEl.on("plotly_click", (ev) => {
+      const a = keyOf(ev.points[0].x), b = keyOf(ev.points[0].y);
+      const xs = optionValues("scatter-x"), ys = optionValues("scatter-y");
+      const pair = xs.includes(a) && ys.includes(b) ? [a, b] : xs.includes(b) && ys.includes(a) ? [b, a] : null;
+      if (!pair) return;
+      document.getElementById("scatter-x").value = pair[0];
+      document.getElementById("scatter-y").value = pair[1];
+      renderScatter();
+    });
+  }
+
+  function renderFatigue() {
+    const rows = plotRows();
+    const pRows = finite(rows, "pace_s_per_km"), hRows = finite(rows, "hr_avg"), eRows = finite(rows, "efficiency");
+    const hoverOf = (r) => `Run ${r.run}<br>Pace: ${pace(r.pace_s_per_km)}<br>HR avg: ${int(r.hr_avg)}`
+      + `<br>Efficiency: ${num(r.efficiency, 2)} km/h per 100 bpm`;
+    const traces = [{
+      type: "scatter", mode: "markers", name: "pace", x: pRows.map((r) => r.run), y: pRows.map((r) => r.pace_s_per_km),
+      marker: { size: 8, color: "#1f77b4" }, hovertext: pRows.map(hoverOf), hoverinfo: "text",
+    }, {
+      type: "scatter", mode: "markers", name: "HR avg", yaxis: "y2", x: hRows.map((r) => r.run), y: hRows.map((r) => r.hr_avg),
+      marker: { size: 8, color: "#d62728", symbol: "diamond" }, hovertext: hRows.map(hoverOf), hoverinfo: "text",
+    }];
+    const pTrend = trendTrace(pRows.map((r) => r.run), pRows.map((r) => r.pace_s_per_km), { line: { dash: "dash", color: "#1f77b4", width: 1.5 } });
+    const hTrend = trendTrace(hRows.map((r) => r.run), hRows.map((r) => r.hr_avg), { yaxis: "y2", line: { dash: "dash", color: "#d62728", width: 1.5 } });
+    for (const t of [pTrend, hTrend]) if (t) traces.push(t);
+    const ex = eRows.map((r) => r.run), ey = eRows.map((r) => r.efficiency);
+    const fit = DWA.linFit(ex, ey);
+    const mean = ey.length ? ey.reduce((a, b) => a + b, 0) / ey.length : null;
+    const pct = fit && eRows.length >= 3 && mean ? (100 * fit.slope) / mean : null;
+    const effText = pct === null ? "-" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% per run`;
+    Plotly.react("fatigue", traces, {
+      height: PLOT_H, margin: { l: 50, r: 45, t: 45, b: 40 }, font: PLOT_FONT, legend: { orientation: "h", y: -0.15 },
+      title: { font: TITLE_FONT, text: `Efficiency trend: ${effText}<br>${corrText(ex, ey)}` },
+      xaxis: { title: { text: "Run #" }, dtick: rows.length > 20 ? 5 : 1 },
+      yaxis: axisFor("pace_s_per_km", pRows.map((r) => r.pace_s_per_km)),
+      yaxis2: { title: { text: "HR avg (bpm)" }, overlaying: "y", side: "right", showgrid: false },
+    }, { responsive: true });
+  }
+
+  function renderAngle() {
+    const bins = DWA.angleBins(tr, plotRuns());
+    const layout = { height: PLOT_H, margin: { l: 30, r: 30, t: 45, b: 30 }, font: PLOT_FONT, legend: { orientation: "h", y: -0.05 } };
+    if (!bins.length) {
+      Plotly.react("angle", [], Object.assign(layout, empty("No samples in runs")), { responsive: true });
+      return;
+    }
+    const best = bins.reduce((a, b) => (b.vmg > a.vmg ? b : a));
+    const signed = (a) => `${a > 0 ? "+" : ""}${a}°`;
+    const hover = bins.map((b) => `${signed(b.angle)} off downwind<br>avg ${num(b.avg)} km/h · best ${num(b.best)} km/h`
+      + `<br>VMG ${num(b.vmg)} km/h · ${b.n} s`);
+    const theta = bins.map((b) => b.angle);
+    Plotly.react("angle", [
+      { type: "scatterpolar", mode: "lines+markers", name: "avg speed", r: bins.map((b) => b.avg), theta,
+        line: { color: "#1f77b4" }, marker: { size: 4 }, hovertext: hover, hoverinfo: "text" },
+      { type: "scatterpolar", mode: "lines+markers", name: "best speed", r: bins.map((b) => b.best), theta,
+        line: { color: "#ff7f0e" }, marker: { size: 4 }, hovertext: hover, hoverinfo: "text" },
+      { type: "scatterpolar", mode: "markers", name: "best VMG", r: [best.avg], theta: [best.angle],
+        marker: { size: 12, color: "#2ca02c", symbol: "star" }, hoverinfo: "skip" },
+    ], Object.assign(layout, {
+      title: { font: TITLE_FONT, text: `Best VMG at ${signed(best.angle)}: ${num(best.vmg)} km/h<br>(0° = downwind, + = right of downwind)` },
+      polar: {
+        sector: polarSector(theta, 5),
+        angularaxis: { rotation: 90, direction: "clockwise", dtick: 15 },
+        radialaxis: { title: { text: "km/h" }, range: [0, Math.max(...bins.map((b) => b.best)) * 1.05] },
+      },
+    }), { responsive: true });
+  }
+
+  function renderRunPlots() {
+    renderScatter();
+    renderPolar();
+    renderCorr();
+    renderFatigue();
+    renderAngle();
   }
 
   function renderAll(recompute) {
@@ -409,8 +585,9 @@
     renderSplits();
     renderMap();
     renderTimeline();
-    renderScatter();
-    renderPolar();
+    renderZones();
+    renderRunPlots();
+    syncMapHeight();
   }
 
   // Controls
@@ -440,8 +617,20 @@
       state.maxHr = v;
       renderRuns();
       renderSplits();
+      renderZones();
     } else {
       maxHr.value = state.maxHr;
+    }
+  });
+
+  const minRun = document.getElementById("min-run");
+  minRun.addEventListener("change", () => {
+    const v = Number(minRun.value);
+    if (Number.isInteger(v) && v >= 0) {
+      state.minRun = v;
+      renderRunPlots();
+    } else {
+      minRun.value = state.minRun;
     }
   });
 
@@ -461,4 +650,6 @@
 
   setTimeZone(DATA.meta.tz);
   renderAll(true);
+  bindCorrClick();
+  if (typeof ResizeObserver === "function") new ResizeObserver(syncMapHeight).observe(rightCol);
 })();

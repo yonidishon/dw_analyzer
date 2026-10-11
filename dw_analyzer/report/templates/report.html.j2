@@ -29,52 +29,67 @@
     <label><input type="radio" name="mode" value="speed" checked> speed</label>
     <label><input type="radio" name="mode" value="runs"> runs</label>
   </span>
+  <label class="min-run">Min run for plots <input type="number" id="min-run" min="0" step="1" value="60"> s</label>
   <label class="max-hr">Max HR <input type="number" id="max-hr" min="1" step="1" value="{{ max_hr }}"> bpm</label>
   <label class="tz">Time zone <select id="tz"></select></label>
 </section>
 <section><h2>Overall</h2><div id="tiles" class="tiles"></div></section>
 <section><h2>Course and runs</h2>
-  <div class="course-runs">
+  <div class="course-runs" id="course-runs">
     <div id="map"></div>
-    <div id="runs" class="table-wrap"></div>
+    <div class="right" id="right">
+      <div id="runs" class="table-wrap"></div>
+      <div class="plot-row">
+        <div class="plot">
+          <div class="plot-controls">
+            <label>X <select id="scatter-x">
+              <option value="pace_s_per_km">Pace</option>
+              <option value="duration_s">Duration</option>
+              <option value="distance_m">Distance</option>
+              <option value="prev_duration_s">Prev run duration</option>
+              <option value="prev_distance_m">Prev run distance</option>
+              <option value="prev_hr_max">Prev run HR max</option>
+            </select></label>
+            <label>Y <select id="scatter-y">
+              <option value="hr_avg">HR avg</option>
+              <option value="hr_max">HR max</option>
+              <option value="back_up_s">Back up</option>
+              <option value="hr_peak_after">HR peak after</option>
+              <option value="hr_drop_60s">HR drop 60 s</option>
+            </select></label>
+          </div>
+          <div id="scatter"></div>
+        </div>
+        <div class="plot">
+          <div class="plot-controls">
+            <label>Radius <select id="polar-r">
+              <option value="pace_s_per_km">Pace</option>
+              <option value="hr_avg">HR avg</option>
+              <option value="hr_max">HR max</option>
+              <option value="vmg_kmh">VMG</option>
+              <option value="distance_m">Distance</option>
+              <option value="duration_s">Duration</option>
+              <option value="hr_peak_after">HR peak after</option>
+              <option value="hr_drop_60s">HR drop 60 s</option>
+            </select></label>
+          </div>
+          <div id="polar"></div>
+        </div>
+        <div class="plot"><div class="plot-controls">Time in HR zones</div><div id="zones"></div></div>
+      </div>
+      <div class="plot-row">
+        <div class="plot"><div class="plot-controls">Correlation matrix (click a cell to plot it)</div><div id="corr"></div></div>
+        <div class="plot"><div class="plot-controls">Fatigue and efficiency</div><div id="fatigue"></div></div>
+        <div class="plot"><div class="plot-controls">Speed by angle off downwind</div><div id="angle"></div></div>
+      </div>
+    </div>
   </div>
 </section>
 <section><h2>Speed and heart rate</h2><div id="timeline"></div></section>
 <section><h2>Splits</h2><div id="splits" class="table-wrap"></div></section>
-<section><h2>Run analysis</h2>
-  <div class="analysis">
-    <div>
-      <div class="plot-controls">
-        <label>X <select id="scatter-x">
-          <option value="pace_s_per_km">Pace</option>
-          <option value="duration_s">Duration</option>
-          <option value="distance_m">Distance</option>
-        </select></label>
-        <label>Y <select id="scatter-y">
-          <option value="hr_avg">HR avg</option>
-          <option value="hr_max">HR max</option>
-          <option value="back_up_s">Back up</option>
-        </select></label>
-      </div>
-      <div id="scatter"></div>
-    </div>
-    <div>
-      <div class="plot-controls">
-        <label>Radius <select id="polar-r">
-          <option value="pace_s_per_km">Pace</option>
-          <option value="hr_avg">HR avg</option>
-          <option value="hr_max">HR max</option>
-          <option value="vmg_kmh">VMG</option>
-          <option value="distance_m">Distance</option>
-          <option value="duration_s">Duration</option>
-        </select></label>
-      </div>
-      <div id="polar"></div>
-    </div>
-  </div>
-</section>
 <script>const DATA = {{ data_json | safe }};</script>
 <script>{{ runs_js | safe }}</script>
+<script>{{ analysis_js | safe }}</script>
 <script>{{ report_js | safe }}</script>
 </body>
 </html>

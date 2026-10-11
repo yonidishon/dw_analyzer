@@ -71,6 +71,7 @@ def render_html(a, out_path) -> Path:
         plotly_js=plotly.offline.get_plotlyjs(),
         data_json=data_json,
         runs_js=static_text("runs.js"),
+        analysis_js=static_text("analysis.js"),
         report_js=static_text("report.js"),
     )
     out = Path(out_path)
