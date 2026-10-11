@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from dw_analyzer.analysis import DEFAULT_TZ, analyze
+from dw_analyzer.analysis import DEFAULT_MIN_RUN_S, DEFAULT_TZ, analyze
 from dw_analyzer.metrics import DEFAULT_MAX_HR
 from dw_analyzer.io import GPXError
 from dw_analyzer.report.html import render_html
@@ -20,6 +20,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--wind-dir", type=float, default=None, help="direction the wind comes from, degrees (default: Open-Meteo, then course)")
     p.add_argument("--tz", default=DEFAULT_TZ, help="IANA time zone for displayed times (default %(default)s)")
     p.add_argument("--max-hr", type=int, default=DEFAULT_MAX_HR, help="max heart rate in bpm for HR zones (default %(default)s)")
+    p.add_argument("--min-run", type=int, default=DEFAULT_MIN_RUN_S,
+                   help="shortest run in seconds used by the run analysis plots (default %(default)s)")
     p.add_argument("--out", type=Path, default=Path("out"), help="output directory (default %(default)s)")
     p.add_argument("--no-pdf", action="store_true", help="only write the HTML report")
     return p
@@ -34,6 +36,8 @@ def main(argv=None) -> int:
         parser.error("--min-duration must be at least 1")
     if args.merge_gap < 0:
         parser.error("--merge-gap must not be negative")
+    if args.min_run < 0:
+        parser.error("--min-run must not be negative")
     if args.max_hr <= 0:
         parser.error("--max-hr must be positive")
     try:
@@ -43,7 +47,7 @@ def main(argv=None) -> int:
 
     try:
         a = analyze(args.gpx, args.threshold, args.min_duration, args.merge_gap, args.wind_dir, tz=args.tz,
-                    max_hr=args.max_hr)
+                    max_hr=args.max_hr, min_run_s=args.min_run)
     except (GPXError, OSError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 2

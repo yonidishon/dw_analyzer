@@ -59,7 +59,7 @@
   const cumPct = cumKm.map((m) => (totalM > 0 ? (100 * m) / totalM : null));
   cumKm.forEach((m, i) => (cumKm[i] = m / 1000));
 
-  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, minRun: 60, bearing: 0, selected: [], anchor: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
+  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, minRun: DATA.params.min_run_s, bearing: 0, selected: [], anchor: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
 
   function compute() {
     state.runs = DW.detectRuns(tr.speed, state.threshold, DATA.params.min_duration_s, DATA.params.merge_gap_s, tr.gap);

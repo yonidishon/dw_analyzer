@@ -14,6 +14,7 @@ from dw_analyzer.wind import Wind, fetch_open_meteo, resolve_wind
 
 SPLITS_KM = (1, 2, 5)
 DEFAULT_TZ = "Asia/Jerusalem"
+DEFAULT_MIN_RUN_S = 60  # shortest run used by the run analysis plots
 
 
 @dataclass
@@ -30,10 +31,12 @@ class Analysis:
     splits: dict[int, list[dict]]
     tz: str
     max_hr: int
+    min_run_s: int
 
 
 def analyze(gpx_path, threshold_kmh=THRESHOLD_KMH, min_duration_s=MIN_DURATION_S, merge_gap_s=MERGE_GAP_S,
-            wind_dir=None, fetch_wind=fetch_open_meteo, tz=DEFAULT_TZ, max_hr=DEFAULT_MAX_HR) -> Analysis:
+            wind_dir=None, fetch_wind=fetch_open_meteo, tz=DEFAULT_TZ, max_hr=DEFAULT_MAX_HR,
+            min_run_s=DEFAULT_MIN_RUN_S) -> Analysis:
     track = prepare(load_gpx(gpx_path))
     wind = resolve_wind(track, wind_dir, threshold_kmh, fetch=fetch_wind)
     track = add_vmg(track, wind.downwind_deg)
@@ -58,4 +61,5 @@ def analyze(gpx_path, threshold_kmh=THRESHOLD_KMH, min_duration_s=MIN_DURATION_S
         splits=splits,
         tz=tz,
         max_hr=int(max_hr),
+        min_run_s=int(min_run_s),
     )

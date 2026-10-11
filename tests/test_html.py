@@ -22,7 +22,8 @@ def test_html_report(tmp_path, sample_path):
     data = embedded_data(text)
     assert len(data["track"]["speed"]) == len(a.track)
     assert set(data["splits"]) == {"1", "2", "5"}
-    assert data["params"] == {"threshold_kmh": 12.0, "min_duration_s": 10, "merge_gap_s": 3, "max_hr": 188}
+    assert data["params"] == {"threshold_kmh": 12.0, "min_duration_s": 10, "merge_gap_s": 3, "max_hr": 188,
+                              "min_run_s": 60}
     assert data["meta"]["title"] == "Downwind session 2026-10-08"
     assert "Plotly" in text
     assert "detectRuns" in text

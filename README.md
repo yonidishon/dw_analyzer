@@ -28,6 +28,7 @@ Writes `out/<gpx name>.html` and `out/<gpx name>.pdf`.
 | `--wind-dir` | none | Direction the wind comes from, in degrees. If not given, Open-Meteo is queried, and if that fails the mean course direction is used as downwind |
 | `--tz` | `Asia/Jerusalem` | IANA time zone for the times shown in the reports (Israel time, including daylight saving) |
 | `--max-hr` | 188 | Max heart rate in bpm, used for the HR zone columns |
+| `--min-run` | 60 | Shortest run in seconds used by the run analysis plots (PDF, and the starting value of the HTML "Min run" boxes) |
 | `--out` | `out` | Output directory |
 | `--no-pdf` | off | Only write the HTML report |
 

@@ -75,7 +75,7 @@
           <option value="hr_peak_after">HR peak after</option>
           <option value="hr_drop_60s">HR drop 60 s</option>
         </select></label>
-        <label class="min-run">Min run <input type="number" min="0" step="1" value="60"> s</label>
+        <label class="min-run">Min run <input type="number" min="0" step="1" value="{{ min_run }}"> s</label>
       </div>
       <div id="scatter"></div>
     </div>
@@ -91,15 +91,15 @@
           <option value="hr_peak_after">HR peak after</option>
           <option value="hr_drop_60s">HR drop 60 s</option>
         </select></label>
-        <label class="min-run">Min run <input type="number" min="0" step="1" value="60"> s</label>
+        <label class="min-run">Min run <input type="number" min="0" step="1" value="{{ min_run }}"> s</label>
       </div>
       <div id="polar"></div>
     </div>
-    <div class="plot expandable"><div class="plot-controls"><span>Speed by angle off downwind</span><label class="min-run">Min run <input type="number" min="0" step="1" value="60"> s</label></div><div id="angle"></div></div>
+    <div class="plot expandable"><div class="plot-controls"><span>Speed by angle off downwind</span><label class="min-run">Min run <input type="number" min="0" step="1" value="{{ min_run }}"> s</label></div><div id="angle"></div></div>
   </div>
   <div class="plot-row two">
-    <div class="plot expandable"><div class="plot-controls"><span>Correlation matrix (click a cell to plot it)</span><label class="min-run">Min run <input type="number" min="0" step="1" value="60"> s</label></div><div id="corr"></div></div>
-    <div class="plot expandable"><div class="plot-controls"><span>Fatigue and efficiency</span><label class="min-run">Min run <input type="number" min="0" step="1" value="60"> s</label></div><div id="fatigue"></div></div>
+    <div class="plot expandable"><div class="plot-controls"><span>Correlation matrix (click a cell to plot it)</span><label class="min-run">Min run <input type="number" min="0" step="1" value="{{ min_run }}"> s</label></div><div id="corr"></div></div>
+    <div class="plot expandable"><div class="plot-controls"><span>Fatigue and efficiency</span><label class="min-run">Min run <input type="number" min="0" step="1" value="{{ min_run }}"> s</label></div><div id="fatigue"></div></div>
   </div>
 </section>
 <script>const DATA = {{ data_json | safe }};</script>
