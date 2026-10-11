@@ -48,3 +48,22 @@ def test_timezone_default_and_override(sample_path):
     first_utc = (pd.Timestamp(utc.overall["start_time"]) + pd.Timedelta(seconds=utc.runs[0].start))
     assert utc.run_rows[0]["start_clock"] == first_utc.strftime("%H:%M:%S")
     assert a.run_rows[0]["start_clock"] == first_utc.tz_convert("Asia/Jerusalem").strftime("%H:%M:%S")
+
+
+def test_anonymize_shifts_time_after_wind_lookup(sample_path):
+    seen = []
+
+    def fetch(lat, lon, start, end):
+        seen.append(start)
+        return None
+
+    real = analyze(sample_path, wind_dir=0)
+    anon = analyze(sample_path, fetch_wind=fetch, anonymize=True)
+    assert seen and seen[0].year == 2026  # the weather lookup still uses the real date
+    start = anon.track["time"].iloc[0].tz_convert(anon.tz)
+    assert (start.year, start.month, start.day, start.hour, start.minute, start.second) == (2000, 1, 1, 12, 0, 0)
+    assert anon.anonymized and not real.anonymized
+    assert anon.overall["distance_m"] == real.overall["distance_m"]
+    assert anon.overall["duration_s"] == real.overall["duration_s"]
+    assert [r["duration_s"] for r in anon.run_rows] == [r["duration_s"] for r in real.run_rows]
+    assert anon.run_rows[0]["start_clock"].startswith("12:")

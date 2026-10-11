@@ -59,3 +59,9 @@ def test_cli_min_run_option(tmp_path, sample_path):
     assert '"min_run_s": 30' in text
     body = text[text.index("<body>"):text.index("<script>const DATA")]
     assert body.count('class="min-run">Min run <input type="number" min="0" step="1" value="30">') == 5
+
+
+def test_cli_anonymize_writes_example(tmp_path, sample_path):
+    assert main([str(sample_path), "--wind-dir", "0", "--anonymize", "--no-pdf", "--out", str(tmp_path)]) == 0
+    assert (tmp_path / "example.html").exists()
+    assert not (tmp_path / "activity_24651972498.html").exists()

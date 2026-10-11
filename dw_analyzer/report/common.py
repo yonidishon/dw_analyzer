@@ -21,7 +21,7 @@ def _start(a):
 
 
 def title(a) -> str:
-    return f"Downwind session {_start(a):%Y-%m-%d}"
+    return "Downwind session (example)" if a.anonymized else f"Downwind session {_start(a):%Y-%m-%d}"
 
 
 def start_label(a) -> str:
@@ -29,8 +29,11 @@ def start_label(a) -> str:
 
 
 def session_summary(a) -> str:
+    summary = f"{fmt_duration(a.overall['duration_s'])} · {fmt_distance(a.overall['distance_m'])}"
+    if a.anonymized:
+        return summary
     lat, lon = a.track["lat"].mean(), a.track["lon"].mean()
-    return f"{lat:.4f}, {lon:.4f} · {fmt_duration(a.overall['duration_s'])} · {fmt_distance(a.overall['distance_m'])}"
+    return f"{lat:.4f}, {lon:.4f} · {summary}"
 
 
 def subtitle(a) -> str:

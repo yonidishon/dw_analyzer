@@ -22,6 +22,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-hr", type=int, default=DEFAULT_MAX_HR, help="max heart rate in bpm for HR zones (default %(default)s)")
     p.add_argument("--min-run", type=int, default=DEFAULT_MIN_RUN_S,
                    help="shortest run in seconds used by the run analysis plots (default %(default)s)")
+    p.add_argument("--anonymize", action="store_true",
+                   help="public example: fake date and time, no coordinates in the title, outputs named example.*")
     p.add_argument("--out", type=Path, default=Path("out"), help="output directory (default %(default)s)")
     p.add_argument("--no-pdf", action="store_true", help="only write the HTML report")
     return p
@@ -47,16 +49,17 @@ def main(argv=None) -> int:
 
     try:
         a = analyze(args.gpx, args.threshold, args.min_duration, args.merge_gap, args.wind_dir, tz=args.tz,
-                    max_hr=args.max_hr, min_run_s=args.min_run)
+                    max_hr=args.max_hr, min_run_s=args.min_run, anonymize=args.anonymize)
     except (GPXError, OSError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
 
     args.out.mkdir(parents=True, exist_ok=True)
-    html = render_html(a, args.out / f"{args.gpx.stem}.html")
+    stem = "example" if args.anonymize else args.gpx.stem  # the GPX name can be a traceable activity ID
+    html = render_html(a, args.out / f"{stem}.html")
     print(html)
     if not args.no_pdf:
         from dw_analyzer.report.pdf import render_pdf  # WeasyPrint import is slow; skip it when not needed
 
-        print(render_pdf(a, args.out / f"{args.gpx.stem}.pdf"))
+        print(render_pdf(a, args.out / f"{stem}.pdf"))
     return 0

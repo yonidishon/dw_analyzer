@@ -5,6 +5,14 @@ Analysis reports for downwind foiling sessions recorded as GPX (for example a Ga
 - an interactive single-file HTML report, with a run threshold slider that recomputes runs in the browser
 - a static PDF report
 
+## Live example
+
+[Interactive example report](https://yonidishon.github.io/dw_analyzer/) (`docs/index.html`, made with `--anonymize`):
+
+```bash
+dw-analyze path/to/session.gpx --anonymize --no-pdf --out docs && mv docs/example.html docs/index.html
+```
+
 ## Install
 
 ```bash
@@ -29,6 +37,7 @@ Writes `out/<gpx name>.html` and `out/<gpx name>.pdf`.
 | `--tz` | `Asia/Jerusalem` | IANA time zone for the times shown in the reports (Israel time, including daylight saving) |
 | `--max-hr` | 188 | Max heart rate in bpm, used for the HR zone columns |
 | `--min-run` | 60 | Shortest run in seconds used by the run analysis plots (PDF, and the starting value of the HTML "Min run" boxes) |
+| `--anonymize` | off | For sharing: the session starts 2000-01-01 12:00 (fake date and time), the title has no date or coordinates, and the outputs are named `example.html` / `example.pdf`. The track, heart rate and all metrics are unchanged |
 | `--out` | `out` | Output directory |
 | `--no-pdf` | off | Only write the HTML report |
 

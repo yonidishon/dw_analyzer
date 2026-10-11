@@ -1,4 +1,5 @@
 import json
+import re
 
 from dw_analyzer.analysis import analyze
 from dw_analyzer.report.html import render_html
@@ -96,3 +97,13 @@ def test_html_plots_are_expandable(tmp_path):
     text = render_html(analyze(gpx, wind_dir=0), tmp_path / "r.html").read_text(encoding="utf-8")
     body = text[text.index("<body>"):text.index("<script>const DATA")]
     assert body.count("expandable") == 8  # map, zones, timeline and the five run analysis plots
+
+
+def test_anonymized_html_has_no_real_date_or_place(tmp_path, sample_path):
+    a = analyze(sample_path, wind_dir=0, anonymize=True)
+    text = render_html(a, tmp_path / "r.html").read_text(encoding="utf-8")
+    assert "<title>Downwind session (example)</title>" in text
+    real_dates = re.findall(r"2026-\d\d-\d\d", text)  # plotly.js and coordinates contain bare "2026"
+    assert real_dates == []
+    assert ("32.6204, 34.9119" in text) is False
+    assert embedded_data(text)["overall"]["start_time"].startswith("2000-01-01T10:00:00")  # 12:00 in Asia/Jerusalem

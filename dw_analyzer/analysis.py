@@ -15,6 +15,7 @@ from dw_analyzer.wind import Wind, fetch_open_meteo, resolve_wind
 SPLITS_KM = (1, 2, 5)
 DEFAULT_TZ = "Asia/Jerusalem"
 DEFAULT_MIN_RUN_S = 60  # shortest run used by the run analysis plots
+ANON_START = "2000-01-01 12:00:00"  # local start time of an anonymised session
 
 
 @dataclass
@@ -32,14 +33,17 @@ class Analysis:
     tz: str
     max_hr: int
     min_run_s: int
+    anonymized: bool = False
 
 
 def analyze(gpx_path, threshold_kmh=THRESHOLD_KMH, min_duration_s=MIN_DURATION_S, merge_gap_s=MERGE_GAP_S,
             wind_dir=None, fetch_wind=fetch_open_meteo, tz=DEFAULT_TZ, max_hr=DEFAULT_MAX_HR,
-            min_run_s=DEFAULT_MIN_RUN_S) -> Analysis:
+            min_run_s=DEFAULT_MIN_RUN_S, anonymize=False) -> Analysis:
     track = prepare(load_gpx(gpx_path))
     wind = resolve_wind(track, wind_dir, threshold_kmh, fetch=fetch_wind)
     track = add_vmg(track, wind.downwind_deg)
+    if anonymize:  # after the wind lookup, which needs the real date
+        track["time"] = track["time"] + (pd.Timestamp(ANON_START, tz=tz) - track["time"].iloc[0])
     runs = detect_runs(track["speed_kmh"].to_numpy(), threshold_kmh, min_duration_s, merge_gap_s,
                        gap=track["gap"].to_numpy())
     run_rows = run_stats(track, runs, tz)
@@ -62,4 +66,5 @@ def analyze(gpx_path, threshold_kmh=THRESHOLD_KMH, min_duration_s=MIN_DURATION_S
         tz=tz,
         max_hr=int(max_hr),
         min_run_s=int(min_run_s),
+        anonymized=bool(anonymize),
     )
