@@ -8,3 +8,7 @@ dist/
 out/
 *.docx
 .DS_Store
+
+# Kept in separate private repositories
+docs/superpowers/
+sample_data/

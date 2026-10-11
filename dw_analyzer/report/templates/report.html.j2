@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<style>{{ css | safe }}</style>
+<script>{{ plotly_js | safe }}</script>
+</head>
+<body>
+<header>
+  <h1>{{ title }}</h1>
+  <p class="sub"><span id="start-time">{{ start_label }}</span> · {{ session_summary }}</p>
+  <p class="sub">{{ run_rule }}</p>
+</header>
+<section class="controls">
+  <label>Run threshold
+    <input type="range" id="thr" min="5" max="30" step="0.5" value="{{ threshold }}">
+    <output id="thr-val"></output> km/h
+  </label>
+  <label>Splits
+    <select id="split">
+      <option value="1">1 km</option>
+      <option value="2">2 km</option>
+      <option value="5">5 km</option>
+    </select>
+  </label>
+  <span>Map colour:
+    <label><input type="radio" name="mode" value="speed" checked> speed</label>
+    <label><input type="radio" name="mode" value="runs"> runs</label>
+  </span>
+  <label class="max-hr">Max HR <input type="number" id="max-hr" min="1" step="1" value="{{ max_hr }}"> bpm</label>
+  <label class="tz">Time zone <select id="tz"></select></label>
+</section>
+<section><h2>Overall</h2>
+  <div class="overall">
+    <div id="tiles" class="tiles"></div>
+    <div class="card expandable"><div class="plot-controls">Time in HR zones</div><div id="zones"></div></div>
+  </div>
+</section>
+<section><h2>Course and runs</h2>
+  <div class="course-runs" id="course-runs">
+    <div class="left expandable" id="left">
+      <div class="map-controls">
+        <label>Map rotation <input type="range" id="bearing" min="-180" max="180" step="1"> <output id="bearing-val"></output>°</label>
+        <button type="button" id="bearing-auto">Auto</button>
+        <button type="button" id="bearing-north">North up</button>
+      </div>
+      <div class="map-wrap"><div id="map"></div><div class="north" id="north" title="North">N<br>↑</div></div>
+    </div>
+    <div class="right" id="right">
+      <div id="runs" class="table-wrap"></div>
+      <div class="table-label">Splits</div>
+      <div id="splits" class="table-wrap"></div>
+    </div>
+  </div>
+</section>
+<section><h2>Speed and heart rate</h2><div class="expandable"><div id="timeline"></div></div></section>
+<section><h2>Run analysis</h2>
+  <div class="plot-row">
+    <div class="plot expandable">
+      <div class="plot-controls">
+        <label>X <select id="scatter-x">
+          <option value="pace_s_per_km">Pace</option>
+          <option value="duration_s">Duration</option>
+          <option value="distance_m">Distance</option>
+          <option value="prev_duration_s">Prev run duration</option>
+          <option value="prev_distance_m">Prev run distance</option>
+          <option value="prev_hr_max">Prev run HR max</option>
+        </select></label>
+        <label>Y <select id="scatter-y">
+          <option value="hr_avg">HR avg</option>
+          <option value="hr_max">HR max</option>
+          <option value="back_up_s">Back up</option>
+          <option value="hr_peak_after">HR peak after</option>
+          <option value="hr_drop_60s">HR drop 60 s</option>
+        </select></label>
+        <label class="min-run">Min run <input type="number" min="0" step="1" value="{{ min_run }}"> s</label>
+      </div>
+      <div id="scatter"></div>
+    </div>
+    <div class="plot expandable">
+      <div class="plot-controls">
+        <label>Radius <select id="polar-r">
+          <option value="pace_s_per_km">Pace</option>
+          <option value="hr_avg">HR avg</option>
+          <option value="hr_max">HR max</option>
+          <option value="vmg_kmh">VMG</option>
+          <option value="distance_m">Distance</option>
+          <option value="duration_s">Duration</option>
+          <option value="hr_peak_after">HR peak after</option>
+          <option value="hr_drop_60s">HR drop 60 s</option>
+        </select></label>
+        <label class="min-run">Min run <input type="number" min="0" step="1" value="{{ min_run }}"> s</label>
+      </div>
+      <div id="polar"></div>
+    </div>
+    <div class="plot expandable"><div class="plot-controls"><span>Speed by angle off downwind</span><label class="min-run">Min run <input type="number" min="0" step="1" value="{{ min_run }}"> s</label></div><div id="angle"></div></div>
+  </div>
+  <div class="plot-row two">
+    <div class="plot expandable"><div class="plot-controls"><span>Correlation matrix (click a cell to plot it)</span><label class="min-run">Min run <input type="number" min="0" step="1" value="{{ min_run }}"> s</label></div><div id="corr"></div></div>
+    <div class="plot expandable"><div class="plot-controls"><span>Fatigue and efficiency</span><label class="min-run">Min run <input type="number" min="0" step="1" value="{{ min_run }}"> s</label></div><div id="fatigue"></div></div>
+  </div>
+</section>
+<script>const DATA = {{ data_json | safe }};</script>
+<script>{{ runs_js | safe }}</script>
+<script>{{ analysis_js | safe }}</script>
+<script>{{ report_js | safe }}</script>
+</body>
+</html>
