@@ -7,6 +7,7 @@ import numpy as np
 import plotly.offline
 
 from dw_analyzer.report.common import env, run_rule, session_summary, start_label, static_text, title, wind_label
+from dw_analyzer.report.figures import course_bearing
 
 
 def clean(obj):
@@ -49,7 +50,8 @@ def track_payload(track) -> dict:
 
 def payload(a) -> dict:
     return {
-        "meta": {"title": title(a), "wind_label": wind_label(a.wind), "downwind_deg": a.wind.downwind_deg, "tz": a.tz},
+        "meta": {"title": title(a), "wind_label": wind_label(a.wind), "downwind_deg": a.wind.downwind_deg,
+                 "course_bearing_deg": course_bearing(a.track, a.wind.downwind_deg), "tz": a.tz},
         "params": {"threshold_kmh": a.threshold_kmh, "min_duration_s": a.min_duration_s, "merge_gap_s": a.merge_gap_s,
                    "max_hr": a.max_hr},
         "track": track_payload(a.track),

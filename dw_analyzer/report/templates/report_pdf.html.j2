@@ -50,7 +50,7 @@ th { color: #6e6e73; }
 <div class="page-break"></div>
 <h2>Course and runs</h2>
 <div class="side">
-<div class="map"><img src="{{ map_uri }}"></div>
+<div class="map"><img src="{{ map_uri }}">{% if map_caption %}<p class="sub">{{ map_caption }}</p>{% endif %}</div>
 <div class="runs">
 {% if run_rows %}
 <table>

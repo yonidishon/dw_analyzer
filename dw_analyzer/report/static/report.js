@@ -59,7 +59,7 @@
   const cumPct = cumKm.map((m) => (totalM > 0 ? (100 * m) / totalM : null));
   cumKm.forEach((m, i) => (cumKm[i] = m / 1000));
 
-  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, minRun: 60, highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
+  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, minRun: 60, bearing: Math.round(DATA.meta.course_bearing_deg), highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
 
   function compute() {
     state.runs = DW.detectRuns(tr.speed, state.threshold, DATA.params.min_duration_s, DATA.params.merge_gap_s, tr.gap);
@@ -217,15 +217,34 @@
   const mapEl = document.getElementById("map");
   const lats = tr.lat.filter((v) => !missing(v));
   const lons = tr.lon.filter((v) => !missing(v));
-  const bounds = { latMin: Math.min(...lats), latMax: Math.max(...lats), lonMin: Math.min(...lons), lonMax: Math.max(...lons) };
-  const center = { lat: (bounds.latMin + bounds.latMax) / 2, lon: (bounds.lonMin + bounds.lonMax) / 2 };
+  const M_PER_DEG = 111320;
+  const latMid = (Math.min(...lats) + Math.max(...lats)) / 2;
+  const lonMid = (Math.min(...lons) + Math.max(...lons)) / 2;
+  const cosLat = Math.cos((latMid * Math.PI) / 180);
+  const xs = lons.map((v) => (v - lonMid) * M_PER_DEG * cosLat);
+  const ys = lats.map((v) => (v - latMid) * M_PER_DEG);
 
-  // Same formula as fit_zoom() in figures.py
-  function fitZoom(w, h) {
-    const lonSpan = Math.max(bounds.lonMax - bounds.lonMin, 1e-3);
-    const latSpan = Math.max((bounds.latMax - bounds.latMin) / Math.cos((center.lat * Math.PI) / 180), 1e-3);
-    const z = Math.min(Math.log2((360 * w) / 512 / lonSpan), Math.log2((360 * h) / 512 / latSpan));
+  // Track bounding box in the frame of a map rotated by bearing (metres; v = screen right, u = screen up), as rotated_box() in figures.py
+  function rotatedBox(bearing) {
+    const b = (bearing * Math.PI) / 180, c = Math.cos(b), s = Math.sin(b);
+    const v = xs.map((x, i) => x * c - ys[i] * s), u = xs.map((x, i) => x * s + ys[i] * c);
+    return { v: [Math.min(...v), Math.max(...v)], u: [Math.min(...u), Math.max(...u)], c, s };
+  }
+
+  // Same formulas as fit_zoom() and fit_center() in figures.py
+  function fitZoom(w, h, bearing) {
+    const { v, u } = rotatedBox(bearing);
+    const wSpan = Math.max((v[1] - v[0]) / (M_PER_DEG * cosLat), 1e-3);
+    const hSpan = Math.max((u[1] - u[0]) / (M_PER_DEG * cosLat), 1e-3);
+    const z = Math.min(Math.log2((360 * w) / 512 / wSpan), Math.log2((360 * h) / 512 / hSpan));
     return Math.min(z - 0.4, 16);
+  }
+
+  function fitCenter(bearing) {
+    const { v, u, c, s } = rotatedBox(bearing);
+    const vc = (v[0] + v[1]) / 2, uc = (u[0] + u[1]) / 2;
+    const x = vc * c + uc * s, y = -vc * s + uc * c;
+    return { lat: latMid + y / M_PER_DEG, lon: lonMid + x / (M_PER_DEG * cosLat) };
   }
 
   function line(s, e, lineColor, width, name, withHover) {
@@ -266,12 +285,14 @@
     return traces;
   }
 
-  // Side by side, the map is as tall as the right column (table + plots); stacked, it has a fixed height
+  // Side by side, the map column is as tall as the right column (runs and splits); stacked, the map has a fixed height
   const MAP_H = 560;
   const courseRuns = document.getElementById("course-runs");
+  const leftCol = document.getElementById("left");
   const rightCol = document.getElementById("right");
   const stacked = () => getComputedStyle(courseRuns).gridTemplateColumns.trim().split(/\s+/).length === 1;
-  const mapHeight = () => (stacked() ? MAP_H : Math.max(rightCol.offsetHeight, MAP_H));
+  const MAP_MIN_H = 300;
+  const mapHeight = () => (stacked() ? MAP_H : Math.max(rightCol.offsetHeight - (leftCol.offsetHeight - mapEl.offsetHeight), MAP_MIN_H));
 
   function syncMapHeight() {
     const h = mapHeight();
@@ -281,10 +302,26 @@
   function renderMap() {
     const h = mapHeight();
     const w = mapEl.clientWidth || 800;
+    // uirevision follows the bearing so a new rotation re-fits the view, while pan/zoom survive other updates
     Plotly.react(mapEl, mapTraces(), {
-      height: h, margin: { l: 0, r: 0, t: 0, b: 0 }, showlegend: false, uirevision: "map",
-      map: { style: "carto-voyager", center, zoom: fitZoom(w, h) },
+      height: h, margin: { l: 0, r: 0, t: 0, b: 0 }, showlegend: false, uirevision: `map ${state.bearing}`,
+      map: { style: "carto-voyager", bearing: state.bearing, center: fitCenter(state.bearing), zoom: fitZoom(w, h, state.bearing) },
     }, { responsive: true });
+    showBearing(state.bearing);
+  }
+
+  const bearingInput = document.getElementById("bearing");
+  const autoBearing = Math.round(DATA.meta.course_bearing_deg);
+
+  function showBearing(b) {
+    bearingInput.value = b;
+    document.getElementById("bearing-val").textContent = b;
+    document.getElementById("north").style.transform = `rotate(${-b}deg)`;
+  }
+
+  function setBearing(b) {
+    state.bearing = b;
+    renderMap();
   }
 
   // Timeline
@@ -331,7 +368,7 @@
     hr_drop_60s: ["HR drop 60 s (bpm)", int, false],
   };
   const TICK_STEPS = [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
-  const PLOT_H = 340;
+  const PLOT_H = 380;
   const PLOT_FONT = { size: 10 };
   const TITLE_FONT = { size: 11 };
   const ZONE_BAR_COLORS = ["#90a4ae", "#42a5f5", "#66bb6a", "#ffca28", "#ffa726", "#ef5350"];
@@ -423,14 +460,8 @@
     const top = Math.max(0, ...values);
     const hi = top + 0.1 * (top - lo || 1);
     const dw = DATA.meta.downwind_deg;
-    const head = hi - 0.12 * (hi - lo);
     const off = finite(rows, "angle_off_deg");
-    Plotly.react("polar", [{
-      // Static wind arrow from the centre, pointing downwind
-      type: "scatterpolar", mode: "lines", name: `downwind (wind from ${DATA.meta.wind_label})`,
-      r: [lo, hi, null, head, hi, head], theta: [dw, dw, null, dw - 5, dw, dw + 5],
-      line: { color: "#424242", width: 3 }, hoverinfo: "name",
-    }, {
+    Plotly.react("polar", [windArrow(lo, hi), {
       type: "scatterpolar", mode: "markers+text", showlegend: false,
       r: values, theta: rows.map((r) => r.heading_deg),
       text: rows.map((r) => String(r.run)), textposition: "top center", textfont: PLOT_FONT,
@@ -541,6 +572,18 @@
     }, { responsive: true });
   }
 
+  // Wind arrow from the centre to radius hi, pointing downwind (compass degrees)
+  function windArrow(lo, hi) {
+    const dw = DATA.meta.downwind_deg;
+    const head = hi - 0.12 * (hi - lo);
+    return {
+      type: "scatterpolar", mode: "lines", name: `downwind (wind from ${DATA.meta.wind_label})`,
+      r: [lo, hi, null, head, hi, head], theta: [dw, dw, null, dw - 5, dw, dw + 5],
+      line: { color: "#424242", width: 3 }, hoverinfo: "name",
+    };
+  }
+
+  // Bins by signed angle off downwind, drawn at their compass heading (downwind + angle) like the run polar
   function renderAngle() {
     const bins = DWA.angleBins(tr, plotRuns());
     const layout = { height: PLOT_H, margin: { l: 30, r: 30, t: 45, b: 30 }, font: PLOT_FONT, legend: { orientation: "h", y: -0.05 } };
@@ -548,24 +591,28 @@
       Plotly.react("angle", [], Object.assign(layout, empty("No samples in runs")), { responsive: true });
       return;
     }
+    const dw = DATA.meta.downwind_deg;
+    const heading = (a) => (((dw + a) % 360) + 360) % 360;
     const best = bins.reduce((a, b) => (b.vmg > a.vmg ? b : a));
     const signed = (a) => `${a > 0 ? "+" : ""}${a}°`;
-    const hover = bins.map((b) => `${signed(b.angle)} off downwind<br>avg ${num(b.avg)} km/h · best ${num(b.best)} km/h`
-      + `<br>VMG ${num(b.vmg)} km/h · ${b.n} s`);
-    const theta = bins.map((b) => b.angle);
+    const hover = bins.map((b) => `${signed(b.angle)} off downwind (heading ${deg(heading(b.angle))})`
+      + `<br>avg ${num(b.avg)} km/h · best ${num(b.best)} km/h<br>VMG ${num(b.vmg)} km/h · ${b.n} s`);
+    const theta = bins.map((b) => heading(b.angle));
+    const hi = Math.max(...bins.map((b) => b.best)) * 1.05;
     Plotly.react("angle", [
+      windArrow(0, hi),
       { type: "scatterpolar", mode: "lines+markers", name: "avg speed", r: bins.map((b) => b.avg), theta,
         line: { color: "#1f77b4" }, marker: { size: 4 }, hovertext: hover, hoverinfo: "text" },
       { type: "scatterpolar", mode: "lines+markers", name: "best speed", r: bins.map((b) => b.best), theta,
         line: { color: "#ff7f0e" }, marker: { size: 4 }, hovertext: hover, hoverinfo: "text" },
-      { type: "scatterpolar", mode: "markers", name: "best VMG", r: [best.avg], theta: [best.angle],
+      { type: "scatterpolar", mode: "markers", name: "best VMG", r: [best.avg], theta: [heading(best.angle)],
         marker: { size: 12, color: "#2ca02c", symbol: "star" }, hoverinfo: "skip" },
     ], Object.assign(layout, {
-      title: { font: TITLE_FONT, text: `Best VMG at ${signed(best.angle)}: ${num(best.vmg)} km/h<br>(0° = downwind, + = right of downwind)` },
+      title: { font: TITLE_FONT, text: `Best VMG at ${signed(best.angle)} (heading ${deg(heading(best.angle))}): ${num(best.vmg)} km/h` },
       polar: {
-        sector: polarSector(theta, 5),
-        angularaxis: { rotation: 90, direction: "clockwise", dtick: 15 },
-        radialaxis: { title: { text: "km/h" }, range: [0, Math.max(...bins.map((b) => b.best)) * 1.05] },
+        sector: polarSector([...theta, dw], 5),
+        angularaxis: { rotation: 90, direction: "clockwise", dtick: 45 },
+        radialaxis: { title: { text: "km/h" }, range: [0, hi] },
       },
     }), { responsive: true });
   }
@@ -623,6 +670,10 @@
     }
   });
 
+  bearingInput.addEventListener("input", () => setBearing(Number(bearingInput.value)));
+  document.getElementById("bearing-auto").addEventListener("click", () => setBearing(autoBearing));
+  document.getElementById("bearing-north").addEventListener("click", () => setBearing(0));
+
   const minRun = document.getElementById("min-run");
   minRun.addEventListener("change", () => {
     const v = Number(minRun.value);
@@ -651,5 +702,9 @@
   setTimeZone(DATA.meta.tz);
   renderAll(true);
   bindCorrClick();
+  // Rotating the map by dragging updates the slider and the north arrow
+  mapEl.on("plotly_relayout", (ev) => {
+    if (ev["map.bearing"] !== undefined) showBearing(Math.round(((ev["map.bearing"] + 540) % 360) - 180));
+  });
   if (typeof ResizeObserver === "function") new ResizeObserver(syncMapHeight).observe(rightCol);
 })();

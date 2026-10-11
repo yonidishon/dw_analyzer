@@ -1,7 +1,8 @@
 import pytest
 
 from dw_analyzer.analysis import analyze
-from dw_analyzer.report.figures import fit_zoom, map_figure, xy_figure
+from dw_analyzer.prep import prepare
+from dw_analyzer.report.figures import course_bearing, fit_center, fit_zoom, map_figure, xy_figure
 from dw_analyzer.report.pdf import pdf_html, render_pdf
 from helpers import make_raw, write_gpx
 
@@ -49,3 +50,26 @@ def test_pdf_zone_cells_coloured(sample_path):
     for z in range(6):
         assert f".z{z} {{" in html
     assert "Distance / % of session" in html
+
+
+def test_course_bearing_points_downwind():
+    track = prepare(make_raw([5.0] * 300, heading_deg=30.0))
+    assert course_bearing(track, 30.0) == pytest.approx(30.0, abs=1)
+    assert course_bearing(track, 210.0) == pytest.approx(-150.0, abs=1)
+    assert course_bearing(track, 100.0) == pytest.approx(30.0, abs=1)
+
+
+def test_fit_rotated():
+    lat, lon = [32.56, 32.68], [34.90, 34.93]
+    assert fit_zoom(lat, lon, 900, 900, bearing=0) == fit_zoom(lat, lon, 900, 900)
+    # A north-south course fills a portrait frame better north-up than rotated 90 degrees
+    assert fit_zoom([32.5, 32.6], [34.9, 34.9], 400, 1200, bearing=0) > fit_zoom([32.5, 32.6], [34.9, 34.9], 400, 1200, bearing=90) + 1
+    c = fit_center(lat, lon)
+    assert c["lat"] == pytest.approx(32.62) and c["lon"] == pytest.approx(34.915)
+    c90 = fit_center(lat, lon, bearing=90)
+    assert c90["lat"] == pytest.approx(32.62) and c90["lon"] == pytest.approx(34.915)
+
+
+def test_pdf_rotation_caption(sample_path):
+    a = analyze(sample_path, wind_dir=0)
+    assert f"Map rotated: up = {course_bearing(a.track, a.wind.downwind_deg) % 360:.0f}° (course direction)" in pdf_html(a)

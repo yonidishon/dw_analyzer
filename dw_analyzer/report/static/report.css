@@ -10,18 +10,29 @@ h2 { font-size: 17px; margin: 24px 0 8px; }
 .controls .min-run input { width: 56px; }
 .controls .max-hr input { width: 64px; }
 .controls .tz select { max-width: 220px; }
-.course-runs { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 16px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fafafc; }
-.course-runs #runs { max-height: 560px; overflow: auto; font-size: 12px; background: var(--bg); }
-.course-runs #runs th, .course-runs #runs td { padding: 3px 5px; }
-.course-runs #runs th { white-space: normal; vertical-align: bottom; }
-.course-runs #runs thead th { position: sticky; top: 0; background: var(--bg); }
-.course-runs .right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.plot-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.plot { background: var(--bg); border-radius: 8px; padding: 6px; min-width: 0; }
+.card, .course-runs { border: 1px solid var(--line); border-radius: 10px; background: #fafafc; }
+.card { padding: 8px; }
+.overall { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; align-items: start; }
+.course-runs { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 16px; align-items: start; padding: 12px; }
+.course-runs .table-wrap { overflow: auto; font-size: 12px; background: var(--bg); }
+.course-runs #runs { max-height: 560px; }
+.course-runs #splits { max-height: 420px; }
+.course-runs th, .course-runs td { padding: 3px 5px; }
+.course-runs th { white-space: normal; vertical-align: bottom; }
+.course-runs thead th { position: sticky; top: 0; background: var(--bg); }
+.course-runs .left, .course-runs .right { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.table-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 4px; }
+.map-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; color: var(--muted); }
+.map-controls input[type=range] { width: 160px; vertical-align: middle; }
+.map-wrap { position: relative; }
+.north { position: absolute; top: 8px; left: 8px; width: 28px; padding: 3px 0; text-align: center; font: 600 11px/1.1 system-ui, sans-serif; background: rgba(255, 255, 255, 0.85); border-radius: 14px; pointer-events: none; }
+.plot-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.plot-row.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.plot { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px; min-width: 0; }
 .plot-controls { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 4px; font-size: 12px; color: var(--muted); }
 @media (max-width: 1200px) {
-  .course-runs { grid-template-columns: minmax(0, 1fr); }
-  .plot-row { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .overall, .course-runs { grid-template-columns: minmax(0, 1fr); }
+  .plot-row, .plot-row.two { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .tile { background: var(--card); border-radius: 8px; padding: 8px 12px; }

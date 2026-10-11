@@ -58,13 +58,18 @@ def test_html_run_analysis_tools(tmp_path):
     assert embedded_data(text)["meta"]["downwind_deg"] == a.wind.downwind_deg == 270
     for el in ('id="scatter-x"', 'id="scatter-y"', 'id="polar-r"'):
         assert el in text
-    assert "<h2>Run analysis" not in text
     assert "DWA" in text
+    overall = text[text.index("<h2>Overall"):text.index("<h2>Course and runs")]
+    assert 'id="zones"' in overall
     group = text[text.index('id="course-runs"'):text.index("<h2>Speed and heart rate")]
-    ids = ["map", "runs", "scatter", "polar", "zones", "corr", "fatigue", "angle"]
-    positions = [group.index(f'id="{i}"') for i in ids]
+    positions = [group.index(f'id="{i}"') for i in ["bearing", "map", "runs", "splits"]]
     assert positions == sorted(positions)
-
+    assert "<h2>Splits" not in text
+    analysis = text[text.index("<h2>Run analysis"):]
+    assert text.index("<h2>Speed and heart rate") < text.index("<h2>Run analysis")
+    positions = [analysis.index(f'id="{i}"') for i in ["scatter", "polar", "angle", "corr", "fatigue"]]
+    assert positions == sorted(positions)
+    assert embedded_data(text)["meta"]["course_bearing_deg"] is not None
 
 def test_html_min_run_input(tmp_path):
     gpx = write_gpx(tmp_path / "t.gpx", make_raw([6.0] * 120))
