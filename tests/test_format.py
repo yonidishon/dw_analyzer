@@ -81,7 +81,7 @@ def test_fmt_hr_zone():
 def test_zone_and_distance_share_columns(sample_path):
     a = analyze(sample_path, wind_dir=0, max_hr=180)
     run_labels = [c[0] for c in RUN_COLUMNS]
-    assert run_labels[3] == "Distance / % of run"
+    assert run_labels[3] == "Distance / % of session"
     assert run_labels[run_labels.index("HR max") + 1] == "HR zone"
     split_labels = [c[0] for c in SPLIT_COLUMNS]
     assert split_labels[split_labels.index("HR max") + 1] == "HR zone"

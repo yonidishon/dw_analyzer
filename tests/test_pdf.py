@@ -2,7 +2,7 @@ import pytest
 
 from dw_analyzer.analysis import analyze
 from dw_analyzer.report.figures import fit_zoom, map_figure, xy_figure
-from dw_analyzer.report.pdf import render_pdf
+from dw_analyzer.report.pdf import pdf_html, render_pdf
 from helpers import make_raw, write_gpx
 
 
@@ -40,3 +40,12 @@ def test_pdf_without_runs_or_hr(tmp_path):
 def test_map_uses_carto_tiles(sample_path):
     a = analyze(sample_path, wind_dir=0)
     assert map_figure(a.track, a.runs, 600, 600).layout.map.style == "carto-voyager"
+
+
+def test_pdf_zone_cells_coloured(sample_path):
+    a = analyze(sample_path, wind_dir=0)
+    html = pdf_html(a)
+    assert 'class="z4">Z4 (' in html
+    for z in range(6):
+        assert f".z{z} {{" in html
+    assert "Distance / % of session" in html

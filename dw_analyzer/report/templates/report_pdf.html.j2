@@ -24,9 +24,16 @@ table { border-collapse: collapse; width: 100%; font-size: 7.5pt; }
 th, td { padding: 2pt 4pt; text-align: right; border-bottom: 0.5pt solid #ddd; }
 th:first-child, td:first-child { text-align: left; }
 th { color: #6e6e73; }
+.z0 { background: #eceff1; }
+.z1 { background: #cfe3f6; }
+.z2 { background: #d4efd9; }
+.z3 { background: #fdf0b8; }
+.z4 { background: #fbd3a5; }
+.z5 { background: #f6b3ae; }
 .page-break { break-before: page; }
 </style>
 </head>
+{% macro zone_attr(header, cell) %}{% if header == "HR zone" and cell != "-" %} class="z{{ cell[1] }}"{% endif %}{% endmacro %}
 <body>
 <h1>{{ title }}</h1>
 <p class="sub">{{ subtitle }}</p>
@@ -49,7 +56,7 @@ th { color: #6e6e73; }
 <table>
 <thead><tr>{% for h in run_headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
 <tbody>
-{% for row in run_rows %}{% set color = run_colors[loop.index0] %}<tr>{% for cell in row %}<td{% if loop.first %} style="border-left: 4pt solid {{ color }}"{% endif %}>{{ cell }}</td>{% endfor %}</tr>
+{% for row in run_rows %}{% set color = run_colors[loop.index0] %}<tr>{% for cell in row %}<td{% if loop.first %} style="border-left: 4pt solid {{ color }}"{% endif %}{{ zone_attr(run_headers[loop.index0], cell) }}>{{ cell }}</td>{% endfor %}</tr>
 {% endfor %}
 </tbody>
 </table>
@@ -65,7 +72,7 @@ th { color: #6e6e73; }
 <table>
 <thead><tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
 <tbody>
-{% for row in rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+{% for row in rows %}<tr>{% for cell in row %}<td{{ zone_attr(headers[loop.index0], cell) }}>{{ cell }}</td>{% endfor %}</tr>
 {% endfor %}
 </tbody>
 </table>

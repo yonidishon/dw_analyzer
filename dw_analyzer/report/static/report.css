@@ -30,5 +30,12 @@ tbody tr { cursor: pointer; }
 tbody tr:hover { background: #f0f6fc; }
 tbody tr.selected { background: #ffe3e8; }
 .empty { color: var(--muted); }
+/* HR zone cells, Z0 (easy) to Z5 (max) */
+.z0 { background: #eceff1; }
+.z1 { background: #cfe3f6; }
+.z2 { background: #d4efd9; }
+.z3 { background: #fdf0b8; }
+.z4 { background: #fbd3a5; }
+.z5 { background: #f6b3ae; }
 th.sortable { cursor: pointer; user-select: none; }
 th.sortable:hover { color: var(--fg); text-decoration: underline; }

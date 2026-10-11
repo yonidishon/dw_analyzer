@@ -18,8 +18,8 @@ def _map_uri(a) -> str:
         return png_data_uri(xy_figure(a.track, a.runs, MAP_W, MAP_H), MAP_W, MAP_H)
 
 
-def render_pdf(a, out_path) -> Path:
-    html = env().get_template("report_pdf.html.j2").render(
+def pdf_html(a) -> str:
+    return env().get_template("report_pdf.html.j2").render(
         title=title(a),
         subtitle=subtitle(a),
         run_rule=run_rule(a),
@@ -32,6 +32,9 @@ def render_pdf(a, out_path) -> Path:
         run_colors=[PALETTE[i % len(PALETTE)] for i in range(len(a.run_rows))],
         splits=[(km, [c[0] for c in SPLIT_COLUMNS], table_rows(a.splits[km], SPLIT_COLUMNS)) for km in SPLITS_KM],
     )
+
+
+def render_pdf(a, out_path) -> Path:
     out = Path(out_path)
-    HTML(string=html).write_pdf(out)
+    HTML(string=pdf_html(a)).write_pdf(out)
     return out

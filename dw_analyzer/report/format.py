@@ -61,7 +61,7 @@ RUN_COLUMNS = [
     ("#", "run", str),
     ("Start", "start_clock", str),
     ("Duration", "duration_s", fmt_duration),
-    ("Distance / % of run", None, _distance_share),
+    ("Distance / % of session", None, _distance_share),
     ("Avg km/h", "avg_speed_kmh", fmt_num),
     ("Pace", "pace_s_per_km", fmt_pace),
     ("Max 5 s", "max_speed_kmh", fmt_num),

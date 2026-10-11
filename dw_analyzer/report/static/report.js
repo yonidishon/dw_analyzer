@@ -104,11 +104,15 @@
     return missing(pct) ? "-" : `Z${DW.hrZone(pct)} (${Math.floor(pct)}%)`;
   };
 
+  // CSS class .z0-.z5 colours the zone cell by severity
+  const zoneClass = (r) => (missing(r.hr_avg) ? "" : `z${DW.hrZone((100 * r.hr_avg) / state.maxHr)}`);
+
+  // Column: [label, formatter, sortKey, descOnFirstClick, cellClass]
   const RUN_COLS = [
     ["#", (r) => String(r.run), "run", false],
     ["Start", (r) => clock(r.start_t)],
     ["Duration", (r) => duration(r.duration_s), "duration_s", true],
-    ["Distance / % of run", (r) => `${dist(r.distance_m)} / ${num(r.distance_pct, 0)}%`, "distance_m", true],
+    ["Distance / % of session", (r) => `${dist(r.distance_m)} / ${num(r.distance_pct, 0)}%`, "distance_m", true],
     ["Avg km/h", (r) => num(r.avg_speed_kmh)],
     ["Pace", (r) => pace(r.pace_s_per_km), "pace_s_per_km", false],
     ["Max 5 s", (r) => num(r.max_speed_kmh), "max_speed_kmh", true],
@@ -117,7 +121,7 @@
     ["VMG km/h", (r) => num(r.vmg_kmh)],
     ["HR avg", (r) => int(r.hr_avg), "hr_avg", true],
     ["HR max", (r) => int(r.hr_max), "hr_max", true],
-    ["HR zone", (r) => hrZoneText(r.hr_avg)],
+    ["HR zone", (r) => hrZoneText(r.hr_avg), null, false, zoneClass],
     ["Back up", (r) => duration(r.back_up_s), "back_up_s", false],
   ];
   const SPLIT_COLS = [
@@ -131,7 +135,7 @@
     ["VMG km/h", (r) => num(r.vmg_kmh)],
     ["HR avg", (r) => int(r.hr_avg), "hr_avg", true],
     ["HR max", (r) => int(r.hr_max), "hr_max", true],
-    ["HR zone", (r) => hrZoneText(r.hr_avg)],
+    ["HR zone", (r) => hrZoneText(r.hr_avg), null, false, zoneClass],
   ];
 
   const isHighlighted = (s, e) => state.highlight && state.highlight[0] === s && state.highlight[1] === e;
@@ -170,9 +174,10 @@
     const body = table.createTBody();
     rows.forEach((r) => {
       const row = body.insertRow();
-      cols.forEach(([, f], c) => {
+      cols.forEach(([, f, , , cellClass], c) => {
         const td = row.insertCell();
         td.textContent = f(r);
+        if (cellClass) td.className = cellClass(r);
         if (c === 0 && swatch) td.style.borderLeft = `6px solid ${color(r.run - 1)}`;
       });
       if (isHighlighted(r.start_t, r.end_t)) row.classList.add("selected");

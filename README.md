@@ -50,7 +50,7 @@ At the bottom of the HTML report, the run analysis section has two plots where e
 
 These plots are HTML only.
 
-The runs and splits tables have an HR zone column: the zone of the average HR plus the average as % of max HR (`--max-hr`, also editable in the HTML banner left of the time zone), e.g. `Z4 (83%)`. Zones by % of max HR: Z1 50-60, Z2 60-70, Z3 70-80, Z4 80-90, Z5 90 and up, Z0 below 50; the % is truncated so it always matches the zone. The runs table "Distance / % of run" column shows each run's distance and its share of the whole session distance.
+The runs and splits tables have an HR zone column: the zone of the average HR plus the average as % of max HR (`--max-hr`, also editable in the HTML banner left of the time zone), e.g. `Z4 (83%)`. Zones by % of max HR: Z1 50-60, Z2 60-70, Z3 70-80, Z4 80-90, Z5 90 and up, Z0 below 50; the % is truncated so it always matches the zone. Zone cells are coloured by severity: grey (Z0), blue, green, yellow, orange, red (Z5). The runs table "Distance / % of session" column shows each run's distance and its share of the whole session distance.
 
 ## Metrics
 
