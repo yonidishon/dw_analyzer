@@ -47,6 +47,8 @@ HTML report layout: the Overall section has the stat tiles with a "Time in HR zo
 
 The map opens rotated so the course's main direction points up the screen, downwind up (the principal axis of the GPS track, taking the end closer to downwind). The "Map rotation" slider above the map turns it (-180 to 180°), "Auto" returns to the course direction and "North up" resets it; a small arrow in the corner shows north. The PDF map uses the same automatic rotation and states it under the map.
 
+Every plot card (map, speed and heart rate, time in HR zones and the run analysis plots) has an enlarge button (⤢) in its top-right corner that opens it in a near full-screen overlay with its controls; close it with the same button (✕), Esc or a click outside.
+
 All plots follow the threshold slider. The run-based plots only use runs at least "Min run for plots" seconds long (banner input, default 60, 0 = all runs):
 
 - **Run scatter:** each dot is a run. X: pace, duration, distance, or the previous run's duration, distance or HR max. Y: HR avg, HR max, back up time, HR peak after or HR drop 60 s. Shows a least-squares trend line and, in the title, Pearson r with its 95% confidence interval and p-value, Spearman rank correlation and n.

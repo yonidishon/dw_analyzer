@@ -56,3 +56,9 @@ tbody tr.selected { background: #ffe3e8; }
 .z5 { background: #f6b3ae; }
 th.sortable { cursor: pointer; user-select: none; }
 th.sortable:hover { color: var(--fg); text-decoration: underline; }
+.expandable { position: relative; }
+.expand { position: absolute; top: 4px; right: 4px; z-index: 5; width: 26px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--muted); font-size: 15px; line-height: 1; cursor: pointer; }
+.expand:hover { color: var(--fg); border-color: var(--muted); }
+.overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); }
+.overlay > .expandable { width: 94vw; height: 92vh; overflow: auto; padding: 12px; background: var(--bg); border-radius: 10px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35); }
+body.has-overlay { overflow: hidden; }

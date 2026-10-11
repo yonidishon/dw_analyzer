@@ -36,12 +36,12 @@
 <section><h2>Overall</h2>
   <div class="overall">
     <div id="tiles" class="tiles"></div>
-    <div class="card"><div class="plot-controls">Time in HR zones</div><div id="zones"></div></div>
+    <div class="card expandable"><div class="plot-controls">Time in HR zones</div><div id="zones"></div></div>
   </div>
 </section>
 <section><h2>Course and runs</h2>
   <div class="course-runs" id="course-runs">
-    <div class="left" id="left">
+    <div class="left expandable" id="left">
       <div class="map-controls">
         <label>Map rotation <input type="range" id="bearing" min="-180" max="180" step="1"> <output id="bearing-val"></output>°</label>
         <button type="button" id="bearing-auto">Auto</button>
@@ -56,10 +56,10 @@
     </div>
   </div>
 </section>
-<section><h2>Speed and heart rate</h2><div id="timeline"></div></section>
+<section><h2>Speed and heart rate</h2><div class="expandable"><div id="timeline"></div></div></section>
 <section><h2>Run analysis</h2>
   <div class="plot-row">
-    <div class="plot">
+    <div class="plot expandable">
       <div class="plot-controls">
         <label>X <select id="scatter-x">
           <option value="pace_s_per_km">Pace</option>
@@ -79,7 +79,7 @@
       </div>
       <div id="scatter"></div>
     </div>
-    <div class="plot">
+    <div class="plot expandable">
       <div class="plot-controls">
         <label>Radius <select id="polar-r">
           <option value="pace_s_per_km">Pace</option>
@@ -94,11 +94,11 @@
       </div>
       <div id="polar"></div>
     </div>
-    <div class="plot"><div class="plot-controls">Speed by angle off downwind</div><div id="angle"></div></div>
+    <div class="plot expandable"><div class="plot-controls">Speed by angle off downwind</div><div id="angle"></div></div>
   </div>
   <div class="plot-row two">
-    <div class="plot"><div class="plot-controls">Correlation matrix (click a cell to plot it)</div><div id="corr"></div></div>
-    <div class="plot"><div class="plot-controls">Fatigue and efficiency</div><div id="fatigue"></div></div>
+    <div class="plot expandable"><div class="plot-controls">Correlation matrix (click a cell to plot it)</div><div id="corr"></div></div>
+    <div class="plot expandable"><div class="plot-controls">Fatigue and efficiency</div><div id="fatigue"></div></div>
   </div>
 </section>
 <script>const DATA = {{ data_json | safe }};</script>

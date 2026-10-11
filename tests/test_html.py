@@ -83,3 +83,10 @@ def test_html_max_hr_input_left_of_timezone(tmp_path):
     text = render_html(analyze(gpx, wind_dir=0, max_hr=175), tmp_path / "r.html").read_text(encoding="utf-8")
     assert 'id="max-hr"' in text and 'value="175"' in text
     assert text.index('id="max-hr"') < text.index('id="tz"')
+
+
+def test_html_plots_are_expandable(tmp_path):
+    gpx = write_gpx(tmp_path / "t.gpx", make_raw([6.0] * 120))
+    text = render_html(analyze(gpx, wind_dir=0), tmp_path / "r.html").read_text(encoding="utf-8")
+    body = text[text.index("<body>"):text.index("<script>const DATA")]
+    assert body.count("expandable") == 8  # map, zones, timeline and the five run analysis plots
