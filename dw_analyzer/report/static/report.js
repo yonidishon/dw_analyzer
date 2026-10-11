@@ -304,9 +304,9 @@
     const w = mapEl.clientWidth || 800;
     // uirevision follows the bearing so a new rotation re-fits the view, while pan/zoom survive other updates
     Plotly.react(mapEl, mapTraces(), {
-      height: h, margin: { l: 0, r: 0, t: 0, b: 0 }, showlegend: false, uirevision: `map ${state.bearing} ${expanded ? "enlarged" : ""}`,
+      width: w, height: h, margin: { l: 0, r: 0, t: 0, b: 0 }, showlegend: false, uirevision: `map ${state.bearing} ${expanded ? "enlarged" : ""}`,
       map: { style: "carto-voyager", bearing: state.bearing, center: fitCenter(state.bearing), zoom: fitZoom(w, h, state.bearing) },
-    }, { responsive: true });
+    });
     showBearing(state.bearing);
   }
 
@@ -339,14 +339,14 @@
     shapes.push({ type: "line", xref: "paper", x0: 0, x1: 1, y0: state.threshold, y1: state.threshold, line: { dash: "dash", color: "#555", width: 1 } });
     if (state.highlight) shapes.push(rect(state.highlight[0], state.highlight[1], HIGHLIGHT, 0.25));
     Plotly.react(tlEl, traces, {
-      height: heightFor("timeline", 320), margin: { l: 50, r: 50, t: 10, b: 40 }, uirevision: "timeline", hovermode: "x unified",
+      ...plotSize("timeline", 320), margin: { l: 50, r: 50, t: 10, b: 40 }, uirevision: "timeline", hovermode: "x unified",
       legend: { orientation: "h", y: 1.12 },
       xaxis: { title: { text: `time (${state.tz})` }, domain: [0, 0.94] },
       yaxis: { title: { text: "km/h" } },
       yaxis2: { title: { text: "bpm" }, overlaying: "y", side: "right", showgrid: false },
       yaxis3: { title: { text: "km" }, overlaying: "y", side: "right", anchor: "free", position: 1, showgrid: false },
       shapes,
-    }, { responsive: true });
+    });
   }
 
   // Run analysis plots: one dot per run, coloured like the run. Runs shorter than state.minRun are left out.
@@ -445,11 +445,11 @@
     const trend = trendTrace(xs, ys);
     if (trend) traces.push(trend);
     Plotly.react("scatter", traces, {
-      height: heightFor("scatter", PLOT_H), margin: { l: 55, r: 10, t: 45, b: 45 }, showlegend: false, font: PLOT_FONT,
+      ...plotSize("scatter", PLOT_H), margin: { l: 55, r: 10, t: 45, b: 45 }, showlegend: false, font: PLOT_FONT,
       title: { font: TITLE_FONT, text: `Pearson r = ${fixed(s.r)} (95% CI ${fixed(s.lo)} to ${fixed(s.hi)}), p = ${pText(s.p)}`
         + `<br>Spearman ρ = ${fixed(s.rho)} · n = ${s.n}` },
       xaxis: axisFor(xKey, xs), yaxis: axisFor(yKey, ys),
-    }, { responsive: true });
+    });
   }
 
   function renderPolar() {
@@ -468,22 +468,22 @@
       marker: { size: 10, color: rows.map((r) => color(r.run - 1)) },
       hovertext: rows.map((r) => `Run ${r.run}<br>Heading: ${deg(r.heading_deg)}<br>${fieldText(rKey, r)}`), hoverinfo: "text",
     }], {
-      height: heightFor("polar", PLOT_H), margin: { l: 30, r: 30, t: 45, b: 30 }, legend: { orientation: "h", y: -0.05 }, font: PLOT_FONT,
+      ...plotSize("polar", PLOT_H), margin: { l: 30, r: 30, t: 45, b: 30 }, legend: { orientation: "h", y: -0.05 }, font: PLOT_FONT,
       title: { font: TITLE_FONT, text: `${FIELDS[rKey][0]} vs off downwind angle<br>${corrText(off.map((r) => r[rKey]), off.map((r) => r.angle_off_deg))}` },
       polar: {
         sector: polarSector([...rows.map((r) => r.heading_deg), dw]),
         angularaxis: { rotation: 90, direction: "clockwise", dtick: 45 },
         radialaxis: Object.assign(axisFor(rKey, values), { range: [lo, hi], title: { text: FIELDS[rKey][0] } }),
       },
-    }, { responsive: true });
+    });
   }
 
   function renderZones() {
-    const layout = { height: heightFor("zones", PLOT_H), margin: { l: 45, r: 10, t: 45, b: 40 }, font: PLOT_FONT, barmode: "group",
+    const layout = { ...plotSize("zones", PLOT_H), margin: { l: 45, r: 10, t: 45, b: 40 }, font: PLOT_FONT, barmode: "group",
       title: { font: TITLE_FONT, text: `Time in HR zones (max HR ${state.maxHr})` },
       legend: { orientation: "h", y: -0.15 }, yaxis: { title: { text: "% of time with HR" } } };
     if (!hasHr) {
-      Plotly.react("zones", [], Object.assign(layout, empty("No heart rate data")), { responsive: true });
+      Plotly.react("zones", [], Object.assign(layout, empty("No heart rate data")));
       return;
     }
     const z = DWA.zoneTime(tr.hr, state.runs, state.maxHr);
@@ -492,7 +492,7 @@
       type: "bar", name, x: labels, y, marker: { color: ZONE_BAR_COLORS, pattern: { shape: pattern, fgcolor: "#424242" } },
       hovertemplate: `${name}<br>%{x}: %{y:.1f}%<extra></extra>`,
     });
-    Plotly.react("zones", [bar("foiling", z.foiling, ""), bar("whole session", z.session, "/")], layout, { responsive: true });
+    Plotly.react("zones", [bar("foiling", z.foiling, ""), bar("whole session", z.session, "/")], layout);
   }
 
   // Variables in the correlation matrix: [field key, short label]
@@ -523,9 +523,9 @@
       texttemplate: "%{z:.1f}", textfont: { size: 8 }, colorbar: { thickness: 8, len: 0.8 },
       hovertemplate: "%{y} vs %{x}<br>r = %{z:.2f}<br>n = %{customdata}<extra></extra>",
     }], {
-      height: heightFor("corr", PLOT_H), margin: { l: 80, r: 5, t: 10, b: 80 }, font: { size: 9 },
+      ...plotSize("corr", PLOT_H), margin: { l: 80, r: 5, t: 10, b: 80 }, font: { size: 9 },
       xaxis: { tickangle: -45 }, yaxis: { autorange: "reversed" },
-    }, { responsive: true });
+    });
   }
 
   // Clicking a matrix cell loads the pair into the run scatter when it maps onto its X and Y options
@@ -564,12 +564,12 @@
     const pct = fit && eRows.length >= 3 && mean ? (100 * fit.slope) / mean : null;
     const effText = pct === null ? "-" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% per run`;
     Plotly.react("fatigue", traces, {
-      height: heightFor("fatigue", PLOT_H), margin: { l: 50, r: 45, t: 45, b: 40 }, font: PLOT_FONT, legend: { orientation: "h", y: -0.15 },
+      ...plotSize("fatigue", PLOT_H), margin: { l: 50, r: 45, t: 45, b: 40 }, font: PLOT_FONT, legend: { orientation: "h", y: -0.15 },
       title: { font: TITLE_FONT, text: `Efficiency trend: ${effText}<br>${corrText(ex, ey)}` },
       xaxis: { title: { text: "Run #" }, dtick: rows.length > 20 ? 5 : 1 },
       yaxis: axisFor("pace_s_per_km", pRows.map((r) => r.pace_s_per_km)),
       yaxis2: { title: { text: "HR avg (bpm)" }, overlaying: "y", side: "right", showgrid: false },
-    }, { responsive: true });
+    });
   }
 
   // Wind arrow from the centre to radius hi, pointing downwind (compass degrees)
@@ -586,9 +586,9 @@
   // Bins by signed angle off downwind, drawn at their compass heading (downwind + angle) like the run polar
   function renderAngle() {
     const bins = DWA.angleBins(tr, plotRuns());
-    const layout = { height: heightFor("angle", PLOT_H), margin: { l: 30, r: 30, t: 45, b: 30 }, font: PLOT_FONT, legend: { orientation: "h", y: -0.05 } };
+    const layout = { ...plotSize("angle", PLOT_H), margin: { l: 30, r: 30, t: 45, b: 30 }, font: PLOT_FONT, legend: { orientation: "h", y: -0.05 } };
     if (!bins.length) {
-      Plotly.react("angle", [], Object.assign(layout, empty("No samples in runs")), { responsive: true });
+      Plotly.react("angle", [], Object.assign(layout, empty("No samples in runs")));
       return;
     }
     const dw = DATA.meta.downwind_deg;
@@ -614,7 +614,7 @@
         angularaxis: { rotation: 90, direction: "clockwise", dtick: 45 },
         radialaxis: { title: { text: "km/h" }, range: [0, hi] },
       },
-    }), { responsive: true });
+    }));
   }
 
   function renderRunPlots() {
@@ -635,6 +635,10 @@
     const pad = parseFloat(getComputedStyle(expanded.card).paddingBottom) || 0;
     return Math.max(Math.floor(expanded.card.getBoundingClientRect().bottom - pad - el.getBoundingClientRect().top - 4), 200);
   }
+
+  // Explicit width (the container's) and height for a plot: Plotly.react does not re-measure the width
+  // when a plot moves into or out of the overlay, so every render passes it
+  const plotSize = (id, h) => ({ width: document.getElementById(id).clientWidth || undefined, height: heightFor(id, h) });
 
   function openOverlay(card, button) {
     const placeholder = document.createComment("enlarged plot");
@@ -678,7 +682,12 @@
     card.appendChild(button);
   }
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeOverlay(); });
-  window.addEventListener("resize", () => { if (expanded) renderAll(false); });
+  // Widths are explicit, so re-render on window resize (debounced)
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => renderAll(false), 150);
+  });
 
   function renderAll(recompute) {
     if (recompute) compute();
