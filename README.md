@@ -39,7 +39,7 @@ Writes `out/<gpx name>.html` and `out/<gpx name>.pdf`.
 
 ## Runs
 
-A run is a period where speed is above the threshold for at least `--min-duration` seconds. Short dips below the threshold (under `--merge-gap` seconds) are merged into the run. In the HTML report the threshold slider re-detects runs and updates the runs table, run statistics, map and timeline. Click a runs table header (#, duration, distance, pace, max 5 s, HR avg, HR max, back up) to sort by it; click again to reverse. The splits table sorts the same way by #, duration, avg km/h, pace, max 5 s, HR avg and HR max.
+A run is a period where speed is above the threshold for at least `--min-duration` seconds. Short dips below the threshold (under `--merge-gap` seconds) are merged into the run. In the HTML report the threshold slider re-detects runs and updates the runs table, run statistics, map and timeline. Click a runs table header (#, duration, distance, pace, max 5 s, HR avg, HR max, back up) to sort by it; click again to reverse. The splits table sorts the same way by #, duration, avg km/h, pace, max 5 s, HR avg and HR max. Click a row to show that run or split on the map and timeline (click it again to clear); Ctrl-click (Cmd on macOS) adds or removes rows, also across the two tables; Shift-click selects the range from the last clicked row in the table's current order.
 
 The speed and heart rate graph also shows cumulative distance (km, right-hand axis); hovering the graph shows the values of all lines at that time, with the distance also as a percentage of the whole session.
 

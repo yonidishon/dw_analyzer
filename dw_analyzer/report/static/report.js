@@ -59,7 +59,7 @@
   const cumPct = cumKm.map((m) => (totalM > 0 ? (100 * m) / totalM : null));
   cumKm.forEach((m, i) => (cumKm[i] = m / 1000));
 
-  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, minRun: 60, bearing: 0, highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
+  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, minRun: 60, bearing: 0, selected: [], anchor: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
 
   function compute() {
     state.runs = DW.detectRuns(tr.speed, state.threshold, DATA.params.min_duration_s, DATA.params.merge_gap_s, tr.gap);
@@ -67,7 +67,8 @@
     DWA.runExtras(tr, state.runs, state.rows);
     for (const r of state.rows) r.distance_pct = DATA.overall.distance_m > 0 ? (100 * r.distance_m) / DATA.overall.distance_m : null;
     state.overall = Object.assign({}, DATA.overall, DW.foilStats(tr, state.runs));
-    state.highlight = null;
+    state.selected = [];
+    state.anchor = null;
   }
 
   const speeds = (vs) => (vs.every(missing) ? "-" : vs.map((v) => num(v)).join(" / ") + " km/h");
@@ -139,7 +140,26 @@
     ["HR zone", (r) => hrZoneText(r.hr_avg), null, false, zoneClass],
   ];
 
-  const isHighlighted = (s, e) => state.highlight && state.highlight[0] === s && state.highlight[1] === e;
+  // Selected table rows as [start, end] sample ranges; anchor = last clicked row { table, start } for shift ranges
+  const isSelected = (s, e) => state.selected.some(([a, b]) => a === s && b === e);
+
+  // Plain click: only this row (again: clear). Ctrl/Cmd-click: toggle this row. Shift-click: range from the anchor
+  // in the table's displayed order, replacing the selection.
+  function selectRow(ev, table, rows, r) {
+    const seg = [r.start_t, r.end_t];
+    const anchorIdx = state.anchor && state.anchor.table === table ? rows.findIndex((x) => x.start_t === state.anchor.start) : -1;
+    if (ev.shiftKey && anchorIdx >= 0) {
+      const i = rows.indexOf(r);
+      state.selected = rows.slice(Math.min(i, anchorIdx), Math.max(i, anchorIdx) + 1).map((x) => [x.start_t, x.end_t]);
+      return;
+    }
+    if (ev.ctrlKey || ev.metaKey) {
+      state.selected = isSelected(...seg) ? state.selected.filter(([a, b]) => a !== seg[0] || b !== seg[1]) : [...state.selected, seg];
+    } else {
+      state.selected = state.selected.length === 1 && isSelected(...seg) ? [] : [seg];
+    }
+    state.anchor = { table, start: r.start_t };
+  }
 
   function renderTiles() {
     document.getElementById("tiles").replaceChildren(...tiles(state.overall).map(([label, value]) => {
@@ -157,7 +177,7 @@
   }
 
   // sort: {key, desc} of the active column; onSort(next) is called with the new sort on a header click
-  function renderTable(el, cols, rows, swatch, sort, onSort) {
+  function renderTable(el, name, cols, rows, swatch, sort, onSort) {
     const table = document.createElement("table");
     const head = table.createTHead().insertRow();
     for (const [label, , key, firstDesc] of cols) {
@@ -181,9 +201,10 @@
         if (cellClass) td.className = cellClass(r);
         if (c === 0 && swatch) td.style.borderLeft = `6px solid ${color(r.run - 1)}`;
       });
-      if (isHighlighted(r.start_t, r.end_t)) row.classList.add("selected");
-      row.addEventListener("click", () => {
-        state.highlight = isHighlighted(r.start_t, r.end_t) ? null : [r.start_t, r.end_t];
+      if (isSelected(r.start_t, r.end_t)) row.classList.add("selected");
+      row.addEventListener("mousedown", (ev) => { if (ev.shiftKey) ev.preventDefault(); }); // no text selection on shift-click
+      row.addEventListener("click", (ev) => {
+        selectRow(ev, name, rows, r);
         renderAll(false);
       });
     });
@@ -192,7 +213,7 @@
 
   function renderSplits() {
     const s = state.splitSort;
-    renderTable(document.getElementById("splits"), SPLIT_COLS, DW.sortRows(DATA.splits[state.splitKm], s.key, s.desc), false, s, (next) => {
+    renderTable(document.getElementById("splits"), "splits", SPLIT_COLS, DW.sortRows(DATA.splits[state.splitKm], s.key, s.desc), false, s, (next) => {
       state.splitSort = next;
       renderSplits();
     });
@@ -201,7 +222,7 @@
   function renderRuns() {
     const el = document.getElementById("runs");
     if (state.rows.length) {
-      renderTable(el, RUN_COLS, DW.sortRows(state.rows, state.sort.key, state.sort.desc), true, state.sort, (s) => {
+      renderTable(el, "runs", RUN_COLS, DW.sortRows(state.rows, state.sort.key, state.sort.desc), true, state.sort, (s) => {
         state.sort = s;
         renderRuns();
       });
@@ -281,7 +302,7 @@
       marker: { size: 12, color: state.runs.map((_, i) => color(i)) },
       text: state.runs.map((r, i) => `Run ${i + 1} start ${clock(r.start)}`), hoverinfo: "text",
     });
-    if (state.highlight) traces.push(line(state.highlight[0], state.highlight[1], HIGHLIGHT, 7, "selected", false));
+    for (const [s, e] of state.selected) traces.push(line(s, e, HIGHLIGHT, 7, "selected", false));
     return traces;
   }
 
@@ -337,7 +358,7 @@
     const rect = (s, e, fill, opacity) => ({ type: "rect", xref: "x", yref: "paper", x0: times[s], x1: times[e - 1], y0: 0, y1: 1, fillcolor: fill, opacity, line: { width: 0 } });
     const shapes = state.runs.map((r, i) => rect(r.start, r.end, color(i), 0.15));
     shapes.push({ type: "line", xref: "paper", x0: 0, x1: 1, y0: state.threshold, y1: state.threshold, line: { dash: "dash", color: "#555", width: 1 } });
-    if (state.highlight) shapes.push(rect(state.highlight[0], state.highlight[1], HIGHLIGHT, 0.25));
+    for (const [s, e] of state.selected) shapes.push(rect(s, e, HIGHLIGHT, 0.25));
     Plotly.react(tlEl, traces, {
       ...plotSize("timeline", 320), margin: { l: 50, r: 50, t: 10, b: 40 }, uirevision: "timeline", hovermode: "x unified",
       legend: { orientation: "h", y: 1.12 },
@@ -712,7 +733,8 @@
   });
   document.getElementById("split").addEventListener("change", (e) => {
     state.splitKm = e.target.value;
-    state.highlight = null;
+    state.selected = [];
+    state.anchor = null;
     renderAll(false);
   });
   document.querySelectorAll("input[name=mode]").forEach((el) =>
