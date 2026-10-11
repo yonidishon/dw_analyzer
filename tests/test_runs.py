@@ -37,3 +37,10 @@ def test_threshold_is_strict_and_nan_is_below():
 
 def test_run_type():
     assert detect_runs([20] * 15, 12) == [Run(0, 15)]
+
+
+def test_gap_samples_split_runs():
+    speed = [20] * 60
+    gap = np.zeros(60, bool)
+    gap[25:35] = True
+    assert spans(detect_runs(speed, 12, 10, 3, gap=gap)) == [(0, 25), (35, 60)]

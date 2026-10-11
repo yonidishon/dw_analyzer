@@ -33,7 +33,7 @@ Writes `out/<gpx name>.html` and `out/<gpx name>.pdf`.
 
 1. GPX points are resampled to one point per second (Garmin smart recording is irregular).
 2. Positions are smoothed with a 3 s rolling mean, then speed, heading and distance are derived.
-3. Gaps longer than 30 s between GPS points are interpolated for the map but excluded from best efforts.
+3. Gaps longer than 30 s between GPS points are interpolated for the map but excluded from best efforts, and they end a run.
 
 ## Runs
 

@@ -32,7 +32,8 @@ def analyze(gpx_path, threshold_kmh=THRESHOLD_KMH, min_duration_s=MIN_DURATION_S
     track = prepare(load_gpx(gpx_path))
     wind = resolve_wind(track, wind_dir, threshold_kmh, fetch=fetch_wind)
     track = add_vmg(track, wind.downwind_deg)
-    runs = detect_runs(track["speed_kmh"].to_numpy(), threshold_kmh, min_duration_s, merge_gap_s)
+    runs = detect_runs(track["speed_kmh"].to_numpy(), threshold_kmh, min_duration_s, merge_gap_s,
+                       gap=track["gap"].to_numpy())
     run_rows = run_stats(track, runs)
     return Analysis(
         source=Path(gpx_path),

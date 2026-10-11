@@ -22,3 +22,18 @@ def test_threshold_changes_runs(sample_path):
     high = analyze(sample_path, threshold_kmh=99, wind_dir=0)
     assert high.runs == []
     assert low.overall["time_foiling_s"] > 0
+
+
+def test_dropout_does_not_inflate_best_efforts_or_runs(tmp_path):
+    from helpers import make_raw, write_gpx
+
+    # 18 km/h, then a 60 s GPS dropout during which the position jumps 2.4 km, then 18 km/h again
+    raw = make_raw([5.0] * 150 + [40.0] * 60 + [5.0] * 150)
+    raw = raw.drop(index=range(151, 210)).reset_index(drop=True)
+    a = analyze(write_gpx(tmp_path / "t.gpx", raw), wind_dir=0)
+    for key in ["max_5s_kmh", "best_10s_kmh", "best_30s_kmh", "best_100m_kmh", "best_500m_kmh"]:
+        assert a.overall[key] <= 18.5, key
+    assert a.runs
+    for r in a.runs:
+        assert not a.track["gap"].iloc[r.start:r.end].any()
+    assert a.overall["avg_speed_foiling_kmh"] <= 18.5

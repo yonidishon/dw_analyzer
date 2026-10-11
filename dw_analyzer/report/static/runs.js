@@ -4,8 +4,9 @@
 
   const ok = (v) => v !== null && v !== undefined && Number.isFinite(v);
 
-  function detectRuns(speed, threshold, minDuration, mergeGap) {
-    const above = (i) => ok(speed[i]) && speed[i] > threshold;
+  // Samples flagged in gap (GPS dropouts) never count as above the threshold.
+  function detectRuns(speed, threshold, minDuration, mergeGap, gap) {
+    const above = (i) => ok(speed[i]) && speed[i] > threshold && !(gap && gap[i]);
     const segments = [];
     let i = 0;
     while (i < speed.length) {

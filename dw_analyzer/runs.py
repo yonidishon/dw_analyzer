@@ -14,8 +14,11 @@ class Run:
     end: int  # last sample + 1
 
 
-def detect_runs(speed_kmh, threshold_kmh, min_duration_s=MIN_DURATION_S, merge_gap_s=MERGE_GAP_S) -> list[Run]:
+def detect_runs(speed_kmh, threshold_kmh, min_duration_s=MIN_DURATION_S, merge_gap_s=MERGE_GAP_S, gap=None) -> list[Run]:
+    """Samples flagged in gap (GPS dropouts) never count as above the threshold."""
     above = np.asarray(speed_kmh, dtype=float) > threshold_kmh
+    if gap is not None:
+        above &= ~np.asarray(gap, dtype=bool)
     segments = []
     i, n = 0, len(above)
     while i < n:

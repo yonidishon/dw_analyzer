@@ -40,6 +40,8 @@ def prepare(raw: pd.DataFrame, smooth_s: int = SMOOTH_S, gap_s: int = GAP_S) -> 
 
     nxt = np.clip(np.searchsorted(secs, grid, side="right"), 1, len(secs) - 1)
     gap = (secs[nxt] - secs[nxt - 1]) > gap_s
+    # Smoothing and the central-difference speed spread the gap's interpolated slope 2 samples each way
+    gap = pd.Series(gap).rolling(5, center=True, min_periods=1).max().to_numpy().astype(bool)
 
     return pd.DataFrame({
         "t": grid.astype(int),

@@ -40,7 +40,7 @@
   const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", highlight: null, runs: [], rows: [], overall: {} };
 
   function compute() {
-    state.runs = DW.detectRuns(tr.speed, state.threshold, DATA.params.min_duration_s, DATA.params.merge_gap_s);
+    state.runs = DW.detectRuns(tr.speed, state.threshold, DATA.params.min_duration_s, DATA.params.merge_gap_s, tr.gap);
     state.rows = DW.runRows(tr, state.runs);
     state.overall = Object.assign({}, DATA.overall, DW.foilStats(tr, state.runs));
     state.highlight = null;

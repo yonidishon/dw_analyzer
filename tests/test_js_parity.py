@@ -33,16 +33,25 @@ def test_clean():
     assert clean({"a": float("nan"), "b": [1.5, float("inf")], "c": (2,)}) == {"a": None, "b": [1.5, None], "c": [2]}
 
 
-def test_js_matches_python(sample_path):
-    track = analyze(sample_path, wind_dir=0).track
+def dropout_gpx(tmp_path):
+    from helpers import make_raw, write_gpx
+
+    raw = make_raw([5.0] * 150 + [40.0] * 60 + [5.0] * 150)
+    return write_gpx(tmp_path / "t.gpx", raw.drop(index=range(151, 210)).reset_index(drop=True))
+
+
+@pytest.mark.parametrize("which", ["sample", "dropout"])
+def test_js_matches_python(sample_path, tmp_path, which):
+    track = analyze(sample_path if which == "sample" else dropout_gpx(tmp_path), wind_dir=0).track
     payload = {"track": track_payload(track), "thresholds": THRESHOLDS, "min_duration_s": 10, "merge_gap_s": 3}
     res = subprocess.run(["node", str(DRIVER), str(RUNS_JS)], input=json.dumps(payload),
                          capture_output=True, text=True, check=True)
     js = json.loads(res.stdout)
     assert any(out["runs"] for out in js)
+    assert track["gap"].any() or which == "sample"
 
     for thr, out in zip(THRESHOLDS, js):
-        runs = detect_runs(track["speed_kmh"].to_numpy(), thr, 10, 3)
+        runs = detect_runs(track["speed_kmh"].to_numpy(), thr, 10, 3, gap=track["gap"].to_numpy())
         assert [(r["start"], r["end"]) for r in out["runs"]] == [(r.start, r.end) for r in runs], thr
         rows = run_stats(track, runs)
         for p, j in zip(clean(rows), out["rows"]):
