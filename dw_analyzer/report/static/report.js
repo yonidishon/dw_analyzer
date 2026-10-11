@@ -59,7 +59,7 @@
   const cumPct = cumKm.map((m) => (totalM > 0 ? (100 * m) / totalM : null));
   cumKm.forEach((m, i) => (cumKm[i] = m / 1000));
 
-  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, minRun: 60, bearing: Math.round(DATA.meta.course_bearing_deg), highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
+  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, minRun: 60, bearing: 0, highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
 
   function compute() {
     state.runs = DW.detectRuns(tr.speed, state.threshold, DATA.params.min_duration_s, DATA.params.merge_gap_s, tr.gap);
@@ -738,16 +738,16 @@
   document.getElementById("bearing-auto").addEventListener("click", () => setBearing(autoBearing));
   document.getElementById("bearing-north").addEventListener("click", () => setBearing(0));
 
-  const minRun = document.getElementById("min-run");
-  minRun.addEventListener("change", () => {
-    const v = Number(minRun.value);
-    if (Number.isInteger(v) && v >= 0) {
-      state.minRun = v;
+  // One "Min run" box per run analysis plot, all sharing state.minRun
+  const minRunInputs = document.querySelectorAll(".min-run input");
+  for (const input of minRunInputs) {
+    input.addEventListener("change", () => {
+      const v = Number(input.value);
+      if (Number.isInteger(v) && v >= 0) state.minRun = v;
+      for (const other of minRunInputs) other.value = state.minRun;
       renderRunPlots();
-    } else {
-      minRun.value = state.minRun;
-    }
-  });
+    });
+  }
 
   document.getElementById("scatter-x").addEventListener("change", renderScatter);
   document.getElementById("scatter-y").addEventListener("change", renderScatter);

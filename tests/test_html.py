@@ -74,8 +74,13 @@ def test_html_run_analysis_tools(tmp_path):
 def test_html_min_run_input(tmp_path):
     gpx = write_gpx(tmp_path / "t.gpx", make_raw([6.0] * 120))
     text = render_html(analyze(gpx, wind_dir=0), tmp_path / "r.html").read_text(encoding="utf-8")
-    assert 'id="min-run"' in text and 'value="60"' in text
-    assert text.index('id="min-run"') < text.index('id="max-hr"')
+    body = text[text.index("<body>"):text.index("<script>const DATA")]
+    banner = body[body.index('class="controls"'):body.index("</section>")]
+    assert "min-run" not in banner
+    analysis = body[body.index("<h2>Run analysis"):]
+    assert analysis.count('class="min-run"') == 5  # one per run analysis plot
+    assert body.count('class="min-run"') == 5
+    assert analysis.count('value="60"') == 5
 
 
 def test_html_max_hr_input_left_of_timezone(tmp_path):

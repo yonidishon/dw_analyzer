@@ -45,11 +45,11 @@ The speed and heart rate graph also shows cumulative distance (km, right-hand ax
 
 HTML report layout: the Overall section has the stat tiles with a "Time in HR zones" card on the right. The "Course and runs" card holds the map on the left and the runs and splits tables on the right; the map grows to the same height. Below the speed and heart rate graph, the Run analysis section has five plots (run scatter, run polar, speed by angle off downwind; then correlation matrix, fatigue and efficiency).
 
-The map opens rotated so the course's main direction points up the screen, downwind up (the principal axis of the GPS track, taking the end closer to downwind). The "Map rotation" slider above the map turns it (-180 to 180°), "Auto" returns to the course direction and "North up" resets it; a small arrow in the corner shows north. The PDF map uses the same automatic rotation and states it under the map.
+The map opens north up. The "Map rotation" slider above the map turns it (-180 to 180°); "Auto" rotates it so the course's main direction points up the screen, downwind up (the principal axis of the GPS track, taking the end closer to downwind), and "North up" resets it; a small arrow in the corner shows north. The PDF map uses the automatic rotation and states it under the map.
 
 Every plot card (map, speed and heart rate, time in HR zones and the run analysis plots) has an enlarge button (⤢) in its top-right corner that opens it in a near full-screen overlay with its controls; close it with the same button (✕), Esc or a click outside.
 
-All plots follow the threshold slider. The run-based plots only use runs at least "Min run for plots" seconds long (banner input, default 60, 0 = all runs):
+All plots follow the threshold slider. The five run analysis plots only use runs at least "Min run" seconds long (a box on each of those plots, default 60, 0 = all runs; the boxes stay in sync). It does not affect the map, tables, tiles, speed and heart rate graph or time in HR zones:
 
 - **Run scatter:** each dot is a run. X: pace, duration, distance, or the previous run's duration, distance or HR max. Y: HR avg, HR max, back up time, HR peak after or HR drop 60 s. Shows a least-squares trend line and, in the title, Pearson r with its 95% confidence interval and p-value, Spearman rank correlation and n.
 - **Run polar:** north up, clockwise; angle = run mean heading, radius chosen from pace, HR avg, HR max, VMG, distance, duration, HR peak after or HR drop 60 s. A fixed arrow from the centre points downwind; the plot zooms to the sector holding the runs and the downwind direction; the title shows the correlation between the radius and the runs' off downwind angle.
