@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dw-analyzer"
+version = "0.1.0"
+description = "Analysis reports for downwind foiling GPX tracks"
+requires-python = ">=3.12"
+dependencies = [
+    "gpxpy",
+    "pandas",
+    "numpy",
+    "plotly==5.24.1",
+    "kaleido==0.2.1",
+    "jinja2",
+    "weasyprint",
+    "requests",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+dw-analyze = "dw_analyzer.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["dw_analyzer*"]
+
+[tool.setuptools.package-data]
+"dw_analyzer.report" = ["templates/*", "static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
