@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<style>{{ css | safe }}</style>
+<script>{{ plotly_js | safe }}</script>
+</head>
+<body>
+<header>
+  <h1>{{ title }}</h1>
+  <p class="sub">{{ subtitle }}</p>
+  <p class="sub">{{ run_rule }}</p>
+</header>
+<section class="controls">
+  <label>Run threshold
+    <input type="range" id="thr" min="5" max="30" step="0.5" value="{{ threshold }}">
+    <output id="thr-val"></output> km/h
+  </label>
+  <label>Splits
+    <select id="split">
+      <option value="1">1 km</option>
+      <option value="2">2 km</option>
+      <option value="5">5 km</option>
+    </select>
+  </label>
+  <span>Map colour:
+    <label><input type="radio" name="mode" value="speed" checked> speed</label>
+    <label><input type="radio" name="mode" value="runs"> runs</label>
+  </span>
+</section>
+<section><h2>Overall</h2><div id="tiles" class="tiles"></div></section>
+<section><h2>Course</h2><div id="map"></div></section>
+<section><h2>Speed and heart rate</h2><div id="timeline"></div></section>
+<section><h2>Runs</h2><div id="runs" class="table-wrap"></div></section>
+<section><h2>Splits</h2><div id="splits" class="table-wrap"></div></section>
+<script>const DATA = {{ data_json | safe }};</script>
+<script>{{ runs_js | safe }}</script>
+<script>{{ report_js | safe }}</script>
+</body>
+</html>
