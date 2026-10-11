@@ -61,7 +61,7 @@ All plots follow the threshold slider. The five run analysis plots only use runs
 
 HR peak after = highest HR in the 60 s after a run ends (cut at the next run start); HR drop 60 s = that peak minus the HR 60 s later (blank if the next run has started by then).
 
-These plots are HTML only.
+The PDF follows the same layout as a static snapshot at the CLI threshold, max HR and `--min-run`: page 1 has the tiles and time in HR zones; page 2 the Course and runs card (auto-rotated map beside the runs table and the 1 km splits, with the map as tall as the tables; long tables continue on the next page); then the speed and heart rate graph and three run analysis plots (speed by angle off downwind, correlation matrix, fatigue and efficiency). The run scatter and run polar plots, and the 2 km and 5 km splits, are HTML only.
 
 The runs and splits tables have an HR zone column: the zone of the average HR plus the average as % of max HR (`--max-hr`, also editable in the HTML banner left of the time zone), e.g. `Z4 (83%)`. Zones by % of max HR: Z1 50-60, Z2 60-70, Z3 70-80, Z4 80-90, Z5 90 and up, Z0 below 50; the % is truncated so it always matches the zone. Zone cells are coloured by severity: grey (Z0), blue, green, yellow, orange, red (Z5). The runs table "Distance / % of session" column shows each run's distance and its share of the whole session distance.
 

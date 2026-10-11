@@ -2,7 +2,11 @@ import pytest
 
 from dw_analyzer.analysis import analyze
 from dw_analyzer.prep import prepare
-from dw_analyzer.report.figures import course_bearing, fit_center, fit_zoom, map_figure, xy_figure
+from dw_analyzer.report.figures import (
+    angle_figure, corr_figure, course_bearing, fatigue_figure, fit_center, fit_zoom, map_figure, timeline_figure,
+    xy_figure, zones_figure,
+)
+from dw_analyzer.run_analysis import angle_bins, corr_matrix, run_extras, zone_time
 from dw_analyzer.report.pdf import pdf_html, render_pdf
 from helpers import make_raw, write_gpx
 
@@ -73,3 +77,33 @@ def test_fit_rotated():
 def test_pdf_rotation_caption(sample_path):
     a = analyze(sample_path, wind_dir=0)
     assert f"Map rotated: up = {course_bearing(a.track, a.wind.downwind_deg) % 360:.0f}° (course direction)" in pdf_html(a)
+
+
+def test_pdf_analysis_figures(sample_path):
+    a = analyze(sample_path, wind_dir=0)
+    assert [t.name for t in timeline_figure(a.track, a.runs, 12, 1400, 360).data] == ["speed (km/h)", "HR (bpm)", "distance (km)"]
+    zones = zones_figure(zone_time(a.track["hr"], a.runs, 188), 188, 500, 400)
+    assert [t.type for t in zones.data] == ["bar", "bar"] and "max HR 188" in zones.layout.title.text
+    angle = angle_figure(angle_bins(a.track, a.runs), a.wind.downwind_deg, "0° (from --wind-dir)", 600, 520)
+    assert angle.data[0].name.startswith("downwind") and angle.layout.title.text.startswith("Best VMG at ")
+    rows = [dict(r) for r in a.run_rows]
+    run_extras(a.track, a.runs, rows)
+    labels, z, n = corr_matrix(rows)
+    corr = corr_figure(labels, z, n, 600, 520)
+    assert corr.data[0].type == "heatmap" and len(corr.data[0].z) == 12
+    fatigue = fatigue_figure(rows, 600, 520)
+    assert fatigue.layout.title.text.startswith("Efficiency trend: ")
+
+
+def test_pdf_layout_like_html(sample_path):
+    a = analyze(sample_path, wind_dir=0)
+    html = pdf_html(a)
+    order = ["<h2>Overall", 'class="card zones"', "<h2>Course and runs", 'id="map"', 'id="right"', "Splits (1 km)",
+             "<h2>Speed and heart rate", "<h2>Run analysis"]
+    positions = [html.index(m) for m in order]
+    assert positions == sorted(positions)
+    assert "Splits (2 km)" not in html and "Splits (5 km)" not in html
+    analysis = html[html.index("<h2>Run analysis"):]
+    assert analysis.count("Runs of 60 s or more") == 3
+    assert analysis.count("data:image/png") == 3
+    assert html.count("data:image/png") == 6  # zones, map, timeline and the three run analysis plots
