@@ -26,6 +26,7 @@ Writes `out/<gpx name>.html` and `out/<gpx name>.pdf`.
 | `--min-duration` | 10 | Minimum run length in seconds |
 | `--merge-gap` | 3 | Dips below the threshold shorter than this many seconds do not end a run |
 | `--wind-dir` | none | Direction the wind comes from, in degrees. If not given, Open-Meteo is queried, and if that fails the mean course direction is used as downwind |
+| `--tz` | `Asia/Jerusalem` | IANA time zone for the times shown in the reports (Israel time, including daylight saving) |
 | `--out` | `out` | Output directory |
 | `--no-pdf` | off | Only write the HTML report |
 
@@ -51,8 +52,8 @@ VMG downwind is `speed * cos(heading - downwind direction)`.
 
 ## Notes
 
-- Times are shown in UTC.
-- The HTML report works offline except for the map tiles, which are loaded from OpenStreetMap.
+- Times are shown in the `--tz` time zone. The HTML report also has a time zone selector at the right of the controls banner.
+- The HTML report works offline except for the map tiles, which are loaded from CARTO basemaps (OpenStreetMap data). OpenStreetMap's own tile servers refuse requests from local files, so they are not used.
 - The PDF map image also needs network access when the report is built. Without it the map background may be blank.
 
 ## Tests

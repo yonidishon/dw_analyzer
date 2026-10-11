@@ -35,3 +35,8 @@ def test_pdf_without_runs_or_hr(tmp_path):
     assert a.runs == []
     out = render_pdf(a, tmp_path / "r.pdf")
     assert out.read_bytes()[:4] == b"%PDF"
+
+
+def test_map_uses_carto_tiles(sample_path):
+    a = analyze(sample_path, wind_dir=0)
+    assert map_figure(a.track, a.runs, 600, 600).layout.map.style == "carto-voyager"

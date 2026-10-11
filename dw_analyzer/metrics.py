@@ -75,14 +75,14 @@ def split_stats(track: pd.DataFrame, split_km: float) -> list[dict]:
     ]
 
 
-def run_stats(track: pd.DataFrame, runs) -> list[dict]:
+def run_stats(track: pd.DataFrame, runs, tz: str = "UTC") -> list[dict]:
     rows = []
     for n, r in enumerate(runs):
         rows.append({
             "run": n + 1,
             "start_t": r.start,
             "end_t": r.end,
-            "start_clock": track["time"].iloc[r.start].strftime("%H:%M:%S"),
+            "start_clock": track["time"].iloc[r.start].tz_convert(tz).strftime("%H:%M:%S"),
             "back_up_s": float(r.start - runs[n - 1].end) if n else NAN,
             **segment_stats(track.iloc[r.start:r.end]),
         })

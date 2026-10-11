@@ -11,6 +11,7 @@ from dw_analyzer.runs import MERGE_GAP_S, MIN_DURATION_S, THRESHOLD_KMH, Run, de
 from dw_analyzer.wind import Wind, fetch_open_meteo, resolve_wind
 
 SPLITS_KM = (1, 2, 5)
+DEFAULT_TZ = "Asia/Jerusalem"
 
 
 @dataclass
@@ -25,16 +26,17 @@ class Analysis:
     run_rows: list[dict]
     overall: dict
     splits: dict[int, list[dict]]
+    tz: str
 
 
 def analyze(gpx_path, threshold_kmh=THRESHOLD_KMH, min_duration_s=MIN_DURATION_S, merge_gap_s=MERGE_GAP_S,
-            wind_dir=None, fetch_wind=fetch_open_meteo) -> Analysis:
+            wind_dir=None, fetch_wind=fetch_open_meteo, tz=DEFAULT_TZ) -> Analysis:
     track = prepare(load_gpx(gpx_path))
     wind = resolve_wind(track, wind_dir, threshold_kmh, fetch=fetch_wind)
     track = add_vmg(track, wind.downwind_deg)
     runs = detect_runs(track["speed_kmh"].to_numpy(), threshold_kmh, min_duration_s, merge_gap_s,
                        gap=track["gap"].to_numpy())
-    run_rows = run_stats(track, runs)
+    run_rows = run_stats(track, runs, tz)
     return Analysis(
         source=Path(gpx_path),
         track=track,
@@ -46,4 +48,5 @@ def analyze(gpx_path, threshold_kmh=THRESHOLD_KMH, min_duration_s=MIN_DURATION_S
         run_rows=run_rows,
         overall=overall_stats(track, runs, run_rows),
         splits={km: split_stats(track, km) for km in SPLITS_KM},
+        tz=tz,
     )

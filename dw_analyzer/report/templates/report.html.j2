@@ -10,7 +10,7 @@
 <body>
 <header>
   <h1>{{ title }}</h1>
-  <p class="sub">{{ subtitle }}</p>
+  <p class="sub"><span id="start-time">{{ start_label }}</span> · {{ session_summary }}</p>
   <p class="sub">{{ run_rule }}</p>
 </header>
 <section class="controls">
@@ -29,11 +29,16 @@
     <label><input type="radio" name="mode" value="speed" checked> speed</label>
     <label><input type="radio" name="mode" value="runs"> runs</label>
   </span>
+  <label class="tz">Time zone <select id="tz"></select></label>
 </section>
 <section><h2>Overall</h2><div id="tiles" class="tiles"></div></section>
-<section><h2>Course</h2><div id="map"></div></section>
+<section><h2>Course and runs</h2>
+  <div class="course-runs">
+    <div id="map"></div>
+    <div id="runs" class="table-wrap"></div>
+  </div>
+</section>
 <section><h2>Speed and heart rate</h2><div id="timeline"></div></section>
-<section><h2>Runs</h2><div id="runs" class="table-wrap"></div></section>
 <section><h2>Splits</h2><div id="splits" class="table-wrap"></div></section>
 <script>const DATA = {{ data_json | safe }};</script>
 <script>{{ runs_js | safe }}</script>

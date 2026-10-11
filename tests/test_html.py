@@ -36,3 +36,16 @@ def test_html_without_hr(tmp_path):
     data = embedded_data(render_html(a, tmp_path / "r.html").read_text(encoding="utf-8"))
     assert all(v is None for v in data["track"]["hr"])
     assert data["overall"]["hr_avg"] is None
+
+
+def test_html_timezone_selector_and_tiles(tmp_path, sample_path):
+    from dw_analyzer.report.common import static_text
+
+    a = analyze(sample_path, wind_dir=0)
+    text = render_html(a, tmp_path / "r.html").read_text(encoding="utf-8")
+    data = embedded_data(text)
+    assert data["meta"]["tz"] == "Asia/Jerusalem"
+    assert 'id="tz"' in text
+    assert 'class="course-runs"' in text
+    js = static_text("report.js")
+    assert "carto-voyager" in js and "open-street-map" not in js

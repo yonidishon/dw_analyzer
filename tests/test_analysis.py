@@ -37,3 +37,14 @@ def test_dropout_does_not_inflate_best_efforts_or_runs(tmp_path):
     for r in a.runs:
         assert not a.track["gap"].iloc[r.start:r.end].any()
     assert a.overall["avg_speed_foiling_kmh"] <= 18.5
+
+
+def test_timezone_default_and_override(sample_path):
+    import pandas as pd
+
+    a = analyze(sample_path, wind_dir=0)
+    assert a.tz == "Asia/Jerusalem"
+    utc = analyze(sample_path, wind_dir=0, tz="UTC")
+    first_utc = (pd.Timestamp(utc.overall["start_time"]) + pd.Timedelta(seconds=utc.runs[0].start))
+    assert utc.run_rows[0]["start_clock"] == first_utc.strftime("%H:%M:%S")
+    assert a.run_rows[0]["start_clock"] == first_utc.tz_convert("Asia/Jerusalem").strftime("%H:%M:%S")

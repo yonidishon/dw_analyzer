@@ -40,7 +40,7 @@ def test_tables_and_tiles(sample_path):
     assert "Max speed (5 s)" in labels and "Avg pace" in labels and "Pace foiling" in labels
     assert all(isinstance(v, str) for _, v in tiles)
     assert title(a) == "Downwind session 2026-10-08"
-    assert subtitle(a).startswith("2026-10-08 12:42 UTC")
+    assert subtitle(a).startswith("2026-10-08 15:42 (Asia/Jerusalem)")
     assert "12 km/h" in run_rule(a)
 
 

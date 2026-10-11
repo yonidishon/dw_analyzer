@@ -29,7 +29,7 @@ def map_figure(track, runs, width, height) -> go.Figure:
     center = dict(lat=(track["lat"].min() + track["lat"].max()) / 2, lon=(track["lon"].min() + track["lon"].max()) / 2)
     fig.update_layout(
         width=width, height=height, showlegend=False, margin=dict(l=0, r=0, t=0, b=0),
-        map=dict(style="open-street-map", center=center, zoom=fit_zoom(track["lat"], track["lon"], width, height)),
+        map=dict(style="carto-voyager", center=center, zoom=fit_zoom(track["lat"], track["lon"], width, height)),
     )
     return fig
 
@@ -46,8 +46,8 @@ def xy_figure(track, runs, width, height) -> go.Figure:
     return fig
 
 
-def timeline_figure(track, runs, threshold_kmh, width, height) -> go.Figure:
-    times = track["time"].dt.tz_convert(None)
+def timeline_figure(track, runs, threshold_kmh, width, height, tz="UTC") -> go.Figure:
+    times = track["time"].dt.tz_convert(tz).dt.tz_localize(None)
     fig = go.Figure(go.Scatter(x=times, y=track["speed_kmh"], name="speed (km/h)", line=dict(color="#1f77b4", width=1)))
     if track["hr"].notna().any():
         fig.add_trace(go.Scatter(x=times, y=track["hr"], name="HR (bpm)", yaxis="y2", line=dict(color="#d62728", width=1)))
@@ -56,7 +56,7 @@ def timeline_figure(track, runs, threshold_kmh, width, height) -> go.Figure:
     fig.add_hline(y=threshold_kmh, line_dash="dash", line_color="#555", line_width=1)
     fig.update_layout(
         width=width, height=height, margin=dict(l=50, r=50, t=10, b=40),
-        legend=dict(orientation="h", y=1.12), xaxis=dict(title="time (UTC)"), yaxis=dict(title="km/h"),
+        legend=dict(orientation="h", y=1.12), xaxis=dict(title=f"time ({tz})"), yaxis=dict(title="km/h"),
         yaxis2=dict(title="bpm", overlaying="y", side="right", showgrid=False),
     )
     return fig

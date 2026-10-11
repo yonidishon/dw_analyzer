@@ -49,7 +49,7 @@ def fmt_deg(v):
 
 RUN_COLUMNS = [
     ("#", "run", str),
-    ("Start (UTC)", "start_clock", str),
+    ("Start", "start_clock", str),
     ("Duration", "duration_s", fmt_duration),
     ("Distance", "distance_m", fmt_distance),
     ("Avg km/h", "avg_speed_kmh", fmt_num),

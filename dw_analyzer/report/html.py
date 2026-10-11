@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import plotly.offline
 
-from dw_analyzer.report.common import env, static_text, subtitle, title, wind_label
+from dw_analyzer.report.common import env, run_rule, session_summary, start_label, static_text, title, wind_label
 
 
 def clean(obj):
@@ -49,7 +49,7 @@ def track_payload(track) -> dict:
 
 def payload(a) -> dict:
     return {
-        "meta": {"title": title(a), "wind_label": wind_label(a.wind)},
+        "meta": {"title": title(a), "wind_label": wind_label(a.wind), "tz": a.tz},
         "params": {"threshold_kmh": a.threshold_kmh, "min_duration_s": a.min_duration_s, "merge_gap_s": a.merge_gap_s},
         "track": track_payload(a.track),
         "overall": clean(a.overall),
@@ -61,9 +61,9 @@ def render_html(a, out_path) -> Path:
     data_json = json.dumps(payload(a), allow_nan=False).replace("</", "<\\/")
     html = env().get_template("report.html.j2").render(
         title=title(a),
-        subtitle=subtitle(a),
-        run_rule=f"Runs: speed above the threshold for at least {a.min_duration_s} s; "
-                 f"dips shorter than {a.merge_gap_s} s are merged. Times in UTC.",
+        start_label=start_label(a),
+        session_summary=session_summary(a),
+        run_rule=run_rule(a, with_threshold=False),
         threshold=a.threshold_kmh,
         css=static_text("report.css"),
         plotly_js=plotly.offline.get_plotlyjs(),

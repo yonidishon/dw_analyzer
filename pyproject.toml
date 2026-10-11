@@ -16,6 +16,7 @@ dependencies = [
     "jinja2",
     "weasyprint",
     "requests",
+    "tzdata",
 ]
 
 [project.optional-dependencies]

@@ -29,15 +29,30 @@
   const dist = (m) => (missing(m) ? "-" : m >= 1000 ? (m / 1000).toFixed(2) + " km" : m.toFixed(0) + " m");
   const deg = (v) => (missing(v) ? "-" : Math.round(v) + "°");
 
-  const iso = (i) => new Date(tr.t0_ms + i * 1000).toISOString();
-  const clock = (i) => iso(i).slice(11, 19);
-  const times = tr.speed.map((_, i) => iso(i).slice(0, 19).replace("T", " "));
-  const hover = tr.speed.map((v, i) =>
-    `${clock(i)} UTC<br>${num(v)} km/h<br>${pace(v > 0 ? 3600 / v : null)}` +
-    (missing(tr.hr[i]) ? "" : `<br>HR ${int(tr.hr[i])}`));
+  // Local "YYYY-MM-DD HH:MM:SS" per sample in the selected time zone; rebuilt by setTimeZone()
+  let times = [];
+  let hover = [];
+  const clock = (i) => times[i].slice(11, 19);
+
+  function setTimeZone(tz) {
+    state.tz = tz;
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+    });
+    times = tr.speed.map((_, i) => {
+      const p = {};
+      for (const part of fmt.formatToParts(new Date(tr.t0_ms + i * 1000))) p[part.type] = part.value;
+      return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`;
+    });
+    hover = tr.speed.map((v, i) =>
+      `${clock(i)}<br>${num(v)} km/h<br>${pace(v > 0 ? 3600 / v : null)}` +
+      (missing(tr.hr[i]) ? "" : `<br>HR ${int(tr.hr[i])}`));
+    document.getElementById("start-time").textContent = `${times[0].slice(0, 16)} (${tz})`;
+  }
   const hasHr = tr.hr.some((v) => !missing(v));
 
-  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", highlight: null, runs: [], rows: [], overall: {} };
+  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, highlight: null, runs: [], rows: [], overall: {} };
 
   function compute() {
     state.runs = DW.detectRuns(tr.speed, state.threshold, DATA.params.min_duration_s, DATA.params.merge_gap_s, tr.gap);
@@ -74,7 +89,7 @@
 
   const RUN_COLS = [
     ["#", (r) => String(r.run)],
-    ["Start (UTC)", (r) => clock(r.start_t)],
+    ["Start", (r) => clock(r.start_t)],
     ["Duration", (r) => duration(r.duration_s)],
     ["Distance", (r) => dist(r.distance_m)],
     ["Avg km/h", (r) => num(r.avg_speed_kmh)],
@@ -201,7 +216,7 @@
       type: "scattermap", mode: "markers", name: "run starts",
       lat: state.runs.map((r) => tr.lat[r.start]), lon: state.runs.map((r) => tr.lon[r.start]),
       marker: { size: 12, color: state.runs.map((_, i) => color(i)) },
-      text: state.runs.map((r, i) => `Run ${i + 1} start ${clock(r.start)} UTC`), hoverinfo: "text",
+      text: state.runs.map((r, i) => `Run ${i + 1} start ${clock(r.start)}`), hoverinfo: "text",
     });
     if (state.highlight) traces.push(line(state.highlight[0], state.highlight[1], HIGHLIGHT, 7, "selected", false));
     return traces;
@@ -212,7 +227,7 @@
     const w = mapEl.clientWidth || 800;
     Plotly.react(mapEl, mapTraces(), {
       height: h, margin: { l: 0, r: 0, t: 0, b: 0 }, showlegend: false, uirevision: "map",
-      map: { style: "open-street-map", center, zoom: fitZoom(w, h) },
+      map: { style: "carto-voyager", center, zoom: fitZoom(w, h) },
     }, { responsive: true });
   }
 
@@ -229,7 +244,7 @@
     Plotly.react(tlEl, traces, {
       height: 320, margin: { l: 50, r: 50, t: 10, b: 40 }, uirevision: "timeline",
       legend: { orientation: "h", y: 1.12 },
-      xaxis: { title: { text: "time (UTC)" } },
+      xaxis: { title: { text: `time (${state.tz})` } },
       yaxis: { title: { text: "km/h" } },
       yaxis2: { title: { text: "bpm" }, overlaying: "y", side: "right", showgrid: false },
       shapes,
@@ -265,5 +280,16 @@
       renderAll(false);
     }));
 
+  const tzSelect = document.getElementById("tz");
+  const zones = new Set(typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : []);
+  zones.add("UTC");
+  zones.add(DATA.meta.tz);
+  for (const z of [...zones].sort()) tzSelect.add(new Option(z, z, false, z === DATA.meta.tz));
+  tzSelect.addEventListener("change", () => {
+    setTimeZone(tzSelect.value);
+    renderAll(false);
+  });
+
+  setTimeZone(DATA.meta.tz);
   renderAll(true);
 })();

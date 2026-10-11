@@ -34,3 +34,13 @@ def test_cli_missing_file(tmp_path, capsys):
 def test_cli_rejects_bad_values(tmp_path, sample_path, flag, value):
     with pytest.raises(SystemExit):
         main([str(sample_path), flag, value, "--out", str(tmp_path)])
+
+
+def test_cli_rejects_unknown_timezone(tmp_path, sample_path):
+    with pytest.raises(SystemExit):
+        main([str(sample_path), "--tz", "Mars/Olympus", "--out", str(tmp_path)])
+
+
+def test_cli_timezone_option(tmp_path, sample_path):
+    assert main([str(sample_path), "--wind-dir", "0", "--tz", "UTC", "--no-pdf", "--out", str(tmp_path)]) == 0
+    assert '"tz": "UTC"' in (tmp_path / "activity_24651972498.html").read_text(encoding="utf-8")
