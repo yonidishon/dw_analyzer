@@ -165,7 +165,7 @@
   function fitZoom(w, h) {
     const lonSpan = Math.max(bounds.lonMax - bounds.lonMin, 1e-3);
     const latSpan = Math.max((bounds.latMax - bounds.latMin) / Math.cos((center.lat * Math.PI) / 180), 1e-3);
-    const z = Math.min(Math.log2((360 * w) / 256 / lonSpan), Math.log2((360 * h) / 256 / latSpan));
+    const z = Math.min(Math.log2((360 * w) / 512 / lonSpan), Math.log2((360 * h) / 512 / latSpan));
     return Math.min(z - 0.4, 16);
   }
 

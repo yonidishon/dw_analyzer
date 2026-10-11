@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }}</title>
+<style>
+@page { size: A4; margin: 12mm; }
+body { font: 9pt/1.35 "DejaVu Sans", sans-serif; color: #1d1d1f; }
+h1 { font-size: 16pt; margin: 0 0 2pt; }
+h2 { font-size: 11pt; margin: 12pt 0 4pt; }
+.sub { color: #6e6e73; margin: 0; }
+.tiles { display: flex; flex-wrap: wrap; }
+.tile { width: 31%; margin: 0 2% 4pt 0; background: #f5f5f7; border-radius: 4pt; padding: 3pt 6pt; }
+.tile .label { display: block; color: #6e6e73; font-size: 7.5pt; }
+.tile .value { font-weight: bold; }
+img { width: 100%; }
+img.map { width: 75%; display: block; margin: 0 auto; }
+table { border-collapse: collapse; width: 100%; font-size: 7.5pt; }
+th, td { padding: 2pt 4pt; text-align: right; border-bottom: 0.5pt solid #ddd; }
+th:first-child, td:first-child { text-align: left; }
+th { color: #6e6e73; }
+.page-break { break-before: page; }
+</style>
+</head>
+<body>
+<h1>{{ title }}</h1>
+<p class="sub">{{ subtitle }}</p>
+<p class="sub">{{ run_rule }}</p>
+
+<h2>Overall</h2>
+<div class="tiles">
+{% for label, value in tiles %}<div class="tile"><span class="label">{{ label }}</span><span class="value">{{ value }}</span></div>{% endfor %}
+</div>
+
+<h2>Course</h2>
+<img class="map" src="{{ map_uri }}">
+
+<div class="page-break"></div>
+<h2>Speed and heart rate</h2>
+<img src="{{ timeline_uri }}">
+
+<h2>Runs</h2>
+{% if run_rows %}
+<table>
+<thead><tr>{% for h in run_headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+<tbody>
+{% for row in run_rows %}{% set color = run_colors[loop.index0] %}<tr>{% for cell in row %}<td{% if loop.first %} style="border-left: 4pt solid {{ color }}"{% endif %}>{{ cell }}</td>{% endfor %}</tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="sub">No runs above {{ threshold }} km/h</p>
+{% endif %}
+
+{% for km, headers, rows in splits %}
+<h2>Splits ({{ km }} km)</h2>
+<table>
+<thead><tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+<tbody>
+{% for row in rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endfor %}
+</body>
+</html>
