@@ -52,7 +52,7 @@
   }
   const hasHr = tr.hr.some((v) => !missing(v));
 
-  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, highlight: null, runs: [], rows: [], overall: {} };
+  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false } };
 
   function compute() {
     state.runs = DW.detectRuns(tr.speed, state.threshold, DATA.params.min_duration_s, DATA.params.merge_gap_s, tr.gap);
@@ -91,19 +91,19 @@
   }
 
   const RUN_COLS = [
-    ["#", (r) => String(r.run)],
+    ["#", (r) => String(r.run), "run", false],
     ["Start", (r) => clock(r.start_t)],
-    ["Duration", (r) => duration(r.duration_s)],
-    ["Distance", (r) => dist(r.distance_m)],
+    ["Duration", (r) => duration(r.duration_s), "duration_s", true],
+    ["Distance", (r) => dist(r.distance_m), "distance_m", true],
     ["Avg km/h", (r) => num(r.avg_speed_kmh)],
-    ["Pace", (r) => pace(r.pace_s_per_km)],
-    ["Max 5 s", (r) => num(r.max_speed_kmh)],
+    ["Pace", (r) => pace(r.pace_s_per_km), "pace_s_per_km", false],
+    ["Max 5 s", (r) => num(r.max_speed_kmh), "max_speed_kmh", true],
     ["Heading", (r) => deg(r.heading_deg)],
     ["Off downwind", (r) => deg(r.angle_off_deg)],
     ["VMG km/h", (r) => num(r.vmg_kmh)],
-    ["HR avg", (r) => int(r.hr_avg)],
-    ["HR max", (r) => int(r.hr_max)],
-    ["Back up", (r) => duration(r.back_up_s)],
+    ["HR avg", (r) => int(r.hr_avg), "hr_avg", true],
+    ["HR max", (r) => int(r.hr_max), "hr_max", true],
+    ["Back up", (r) => duration(r.back_up_s), "back_up_s", false],
   ];
   const SPLIT_COLS = [
     ["#", (r) => String(r.split)],
@@ -135,21 +135,29 @@
     }));
   }
 
-  function renderTable(el, cols, rows, swatch) {
+  function renderTable(el, cols, rows, swatch, sort) {
     const table = document.createElement("table");
     const head = table.createTHead().insertRow();
-    for (const [label] of cols) {
+    for (const [label, , key, firstDesc] of cols) {
       const th = document.createElement("th");
       th.textContent = label;
+      if (sort && key) {
+        th.className = "sortable";
+        if (sort.key === key) th.textContent += sort.desc ? " ▼" : " ▲";
+        th.addEventListener("click", () => {
+          state.sort = sort.key === key ? { key, desc: !sort.desc } : { key, desc: firstDesc };
+          renderRuns();
+        });
+      }
       head.appendChild(th);
     }
     const body = table.createTBody();
-    rows.forEach((r, i) => {
+    rows.forEach((r) => {
       const row = body.insertRow();
       cols.forEach(([, f], c) => {
         const td = row.insertCell();
         td.textContent = f(r);
-        if (c === 0 && swatch) td.style.borderLeft = `6px solid ${color(i)}`;
+        if (c === 0 && swatch) td.style.borderLeft = `6px solid ${color(r.run - 1)}`;
       });
       if (isHighlighted(r.start_t, r.end_t)) row.classList.add("selected");
       row.addEventListener("click", () => {
@@ -163,7 +171,7 @@
   function renderRuns() {
     const el = document.getElementById("runs");
     if (state.rows.length) {
-      renderTable(el, RUN_COLS, state.rows, true);
+      renderTable(el, RUN_COLS, DW.sortRows(state.rows, state.sort.key, state.sort.desc), true, state.sort);
     } else {
       const p = document.createElement("p");
       p.className = "empty";

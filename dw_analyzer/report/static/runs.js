@@ -128,7 +128,19 @@
     };
   }
 
-  const DW = { detectRuns, segmentStats, runRows, foilStats };
+  // Sorted copy of rows by key; missing values always last; ties keep their original order.
+  function sortRows(rows, key, desc) {
+    return rows
+      .map((r, i) => [r, i])
+      .sort(([a, i], [b, k]) => {
+        const va = a[key], vb = b[key];
+        if (!ok(va) || !ok(vb)) return ok(va) ? -1 : ok(vb) ? 1 : i - k;
+        return (desc ? vb - va : va - vb) || i - k;
+      })
+      .map(([r]) => r);
+  }
+
+  const DW = { detectRuns, segmentStats, runRows, foilStats, sortRows };
   if (typeof module !== "undefined" && module.exports) module.exports = DW;
   else root.DW = DW;
 })(this);

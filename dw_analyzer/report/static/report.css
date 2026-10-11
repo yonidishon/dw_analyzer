@@ -27,3 +27,5 @@ tbody tr { cursor: pointer; }
 tbody tr:hover { background: #f0f6fc; }
 tbody tr.selected { background: #ffe3e8; }
 .empty { color: var(--muted); }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--fg); text-decoration: underline; }
