@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 
 from dw_analyzer.metrics import (
-    add_vmg, best_distance, best_efforts, best_time_window, overall_stats, run_stats, segment_stats, split_stats,
+    add_distance_pct, add_hr_pct, add_vmg, best_distance, best_efforts, best_time_window, hr_zone, overall_stats,
+    run_stats, segment_stats, split_stats,
 )
 from dw_analyzer.prep import prepare
 from dw_analyzer.runs import detect_runs
@@ -154,3 +155,20 @@ def test_no_best_run_when_all_runs_short():
     assert o["n_runs"] == 1
     assert math.isnan(o["best_run_s"])
     assert not math.isnan(o["longest_run_pace_s_per_km"])
+
+
+def test_hr_zone_boundaries():
+    assert [hr_zone(p) for p in (10, 49.9, 50, 69.9, 70, 80, 89.99, 90, 105)] == [0, 0, 1, 2, 3, 4, 4, 5, 5]
+    assert hr_zone(NAN_) is None
+
+
+def test_add_hr_pct_and_distance_pct():
+    rows = [{"hr_avg": 94.0, "distance_m": 250.0}, {"hr_avg": NAN_, "distance_m": 750.0}]
+    add_hr_pct(rows, 188)
+    add_distance_pct(rows, 2000.0)
+    assert rows[0]["hr_pct_max"] == pytest.approx(50.0)
+    assert math.isnan(rows[1]["hr_pct_max"])
+    assert [r["distance_pct"] for r in rows] == [12.5, 37.5]
+
+
+NAN_ = float("nan")

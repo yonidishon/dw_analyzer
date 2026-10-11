@@ -1,6 +1,8 @@
 """Text formatting for report values. Mirrored by the formatters in static/report.js."""
 import math
 
+from dw_analyzer.metrics import hr_zone
+
 
 def _missing(v):
     return v is None or (isinstance(v, (int, float)) and not math.isfinite(v))
@@ -47,11 +49,19 @@ def fmt_deg(v):
     return "-" if _missing(v) else f"{_round(v)}°"
 
 
+def fmt_hr_zone(pct):
+    return "-" if _missing(pct) else f"Z{hr_zone(pct)} ({math.floor(pct)}%)"
+
+
+def _distance_share(row):
+    return f"{fmt_distance(row['distance_m'])} / {fmt_num(row['distance_pct'], 0)}%"
+
+
 RUN_COLUMNS = [
     ("#", "run", str),
     ("Start", "start_clock", str),
     ("Duration", "duration_s", fmt_duration),
-    ("Distance", "distance_m", fmt_distance),
+    ("Distance / % of run", None, _distance_share),
     ("Avg km/h", "avg_speed_kmh", fmt_num),
     ("Pace", "pace_s_per_km", fmt_pace),
     ("Max 5 s", "max_speed_kmh", fmt_num),
@@ -60,6 +70,7 @@ RUN_COLUMNS = [
     ("VMG km/h", "vmg_kmh", fmt_num),
     ("HR avg", "hr_avg", fmt_int),
     ("HR max", "hr_max", fmt_int),
+    ("HR zone", "hr_pct_max", fmt_hr_zone),
     ("Back up", "back_up_s", fmt_duration),
 ]
 
@@ -74,11 +85,13 @@ SPLIT_COLUMNS = [
     ("VMG km/h", "vmg_kmh", fmt_num),
     ("HR avg", "hr_avg", fmt_int),
     ("HR max", "hr_max", fmt_int),
+    ("HR zone", "hr_pct_max", fmt_hr_zone),
 ]
 
 
 def table_rows(rows, columns):
-    return [[fmt(row[key]) for _, key, fmt in columns] for row in rows]
+    """Formatted cells; a column whose key is None formats the whole row."""
+    return [[fmt(row) if key is None else fmt(row[key]) for _, key, fmt in columns] for row in rows]
 
 
 def _speeds(values):

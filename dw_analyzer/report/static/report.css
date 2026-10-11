@@ -6,7 +6,8 @@ h2 { font-size: 17px; margin: 24px 0 8px; }
 .sub { color: var(--muted); margin: 0; }
 .controls { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; padding: 12px 16px; margin-top: 16px; background: var(--card); border-radius: 8px; position: sticky; top: 0; z-index: 10; }
 .controls input[type=range] { width: 220px; vertical-align: middle; }
-.controls .tz { margin-left: auto; }
+.controls .max-hr { margin-left: auto; }
+.controls .max-hr input { width: 64px; }
 .controls .tz select { max-width: 220px; }
 .course-runs { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 16px; align-items: start; }
 .course-runs #runs { max-height: 560px; overflow: auto; font-size: 12px; }

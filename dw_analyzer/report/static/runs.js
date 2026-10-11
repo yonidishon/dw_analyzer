@@ -140,7 +140,23 @@
       .map(([r]) => r);
   }
 
-  const DW = { detectRuns, segmentStats, runRows, foilStats, sortRows };
+  // Pearson correlation of paired values; null for fewer than 3 pairs or a constant series
+  function pearson(xs, ys) {
+    const n = xs.length;
+    if (n < 3) return null;
+    const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
+    let sxy = 0, sxx = 0, syy = 0;
+    for (let i = 0; i < n; i++) {
+      const dx = xs[i] - mx, dy = ys[i] - my;
+      sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
+    }
+    return sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : null;
+  }
+
+  const HR_ZONES_PCT = [50, 60, 70, 80, 90]; // lower bounds of Z1-Z5 in % of max HR (metrics.py)
+  const hrZone = (pct) => (ok(pct) ? HR_ZONES_PCT.filter((b) => pct >= b).length : null);
+
+  const DW = { detectRuns, segmentStats, runRows, foilStats, sortRows, pearson, hrZone };
   if (typeof module !== "undefined" && module.exports) module.exports = DW;
   else root.DW = DW;
 })(this);

@@ -59,11 +59,12 @@
   const cumPct = cumKm.map((m) => (totalM > 0 ? (100 * m) / totalM : null));
   cumKm.forEach((m, i) => (cumKm[i] = m / 1000));
 
-  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
+  const state = { threshold: DATA.params.threshold_kmh, splitKm: "1", mapMode: "speed", tz: DATA.meta.tz, maxHr: DATA.params.max_hr, highlight: null, runs: [], rows: [], overall: {}, sort: { key: "run", desc: false }, splitSort: { key: "split", desc: false } };
 
   function compute() {
     state.runs = DW.detectRuns(tr.speed, state.threshold, DATA.params.min_duration_s, DATA.params.merge_gap_s, tr.gap);
     state.rows = DW.runRows(tr, state.runs);
+    for (const r of state.rows) r.distance_pct = DATA.overall.distance_m > 0 ? (100 * r.distance_m) / DATA.overall.distance_m : null;
     state.overall = Object.assign({}, DATA.overall, DW.foilStats(tr, state.runs));
     state.highlight = null;
   }
@@ -97,11 +98,17 @@
     ];
   }
 
+  // Zone of the average HR plus % of max HR, e.g. "Z4 (83%)" (fmt_hr_zone in format.py)
+  const hrZoneText = (hr) => {
+    const pct = missing(hr) ? null : (100 * hr) / state.maxHr;
+    return missing(pct) ? "-" : `Z${DW.hrZone(pct)} (${Math.floor(pct)}%)`;
+  };
+
   const RUN_COLS = [
     ["#", (r) => String(r.run), "run", false],
     ["Start", (r) => clock(r.start_t)],
     ["Duration", (r) => duration(r.duration_s), "duration_s", true],
-    ["Distance", (r) => dist(r.distance_m), "distance_m", true],
+    ["Distance / % of run", (r) => `${dist(r.distance_m)} / ${num(r.distance_pct, 0)}%`, "distance_m", true],
     ["Avg km/h", (r) => num(r.avg_speed_kmh)],
     ["Pace", (r) => pace(r.pace_s_per_km), "pace_s_per_km", false],
     ["Max 5 s", (r) => num(r.max_speed_kmh), "max_speed_kmh", true],
@@ -110,6 +117,7 @@
     ["VMG km/h", (r) => num(r.vmg_kmh)],
     ["HR avg", (r) => int(r.hr_avg), "hr_avg", true],
     ["HR max", (r) => int(r.hr_max), "hr_max", true],
+    ["HR zone", (r) => hrZoneText(r.hr_avg)],
     ["Back up", (r) => duration(r.back_up_s), "back_up_s", false],
   ];
   const SPLIT_COLS = [
@@ -123,6 +131,7 @@
     ["VMG km/h", (r) => num(r.vmg_kmh)],
     ["HR avg", (r) => int(r.hr_avg), "hr_avg", true],
     ["HR max", (r) => int(r.hr_max), "hr_max", true],
+    ["HR zone", (r) => hrZoneText(r.hr_avg)],
   ];
 
   const isHighlighted = (s, e) => state.highlight && state.highlight[0] === s && state.highlight[1] === e;
@@ -268,14 +277,14 @@
     if (hasHr) traces.push({ type: "scatter", mode: "lines", x: times, y: tr.hr, name: "HR (bpm)", yaxis: "y2", line: { color: "#d62728", width: 1 } });
     traces.push({
       type: "scatter", mode: "lines", x: times, y: cumKm, name: "distance (km)", yaxis: "y3", line: { color: "#2ca02c", width: 1 },
-      customdata: cumPct, hovertemplate: "%{y:.2f} km (%{customdata:.1f}% of session)<extra></extra>",
+      customdata: cumPct, hovertemplate: "distance %{y:.2f} km (%{customdata:.1f}% of session)<extra></extra>",
     });
     const rect = (s, e, fill, opacity) => ({ type: "rect", xref: "x", yref: "paper", x0: times[s], x1: times[e - 1], y0: 0, y1: 1, fillcolor: fill, opacity, line: { width: 0 } });
     const shapes = state.runs.map((r, i) => rect(r.start, r.end, color(i), 0.15));
     shapes.push({ type: "line", xref: "paper", x0: 0, x1: 1, y0: state.threshold, y1: state.threshold, line: { dash: "dash", color: "#555", width: 1 } });
     if (state.highlight) shapes.push(rect(state.highlight[0], state.highlight[1], HIGHLIGHT, 0.25));
     Plotly.react(tlEl, traces, {
-      height: 320, margin: { l: 50, r: 50, t: 10, b: 40 }, uirevision: "timeline",
+      height: 320, margin: { l: 50, r: 50, t: 10, b: 40 }, uirevision: "timeline", hovermode: "x unified",
       legend: { orientation: "h", y: 1.12 },
       xaxis: { title: { text: `time (${state.tz})` }, domain: [0, 0.94] },
       yaxis: { title: { text: "km/h" } },
@@ -313,6 +322,27 @@
 
   const fieldText = (key, r) => `${FIELDS[key][0]}: ${FIELDS[key][1](r[key])}`;
 
+  // "r = 0.42 (n = 17)" for the paired values; "r = -" when undefined
+  function corrText(xs, ys) {
+    const r = DW.pearson(xs, ys);
+    return `r = ${r === null ? "-" : r.toFixed(2)} (n = ${xs.length})`;
+  }
+
+  // Smallest compass arc holding all angles, padded; as a Plotly sector (counterclockwise screen degrees, 0 = east)
+  function polarSector(angles) {
+    const a = [...new Set(angles.map((v) => ((v % 360) + 360) % 360))].sort((x, y) => x - y);
+    if (a.length < 2) return [0, 360];
+    let gap = 360 - a[a.length - 1] + a[0], start = a[0];
+    for (let i = 1; i < a.length; i++) {
+      if (a[i] - a[i - 1] > gap) { gap = a[i] - a[i - 1]; start = a[i]; }
+    }
+    const span = 360 - gap + 20;
+    if (span > 330) return [0, 360];
+    // Compass heading h is drawn at screen angle 90 - h (rotation 90, clockwise)
+    const end = start - 10 + span;
+    return [90 - end, 90 - end + span];
+  }
+
   function renderScatter() {
     const xKey = document.getElementById("scatter-x").value;
     const yKey = document.getElementById("scatter-y").value;
@@ -324,10 +354,16 @@
       marker: { size: 11, color: rows.map((r) => color(r.run - 1)) },
       hovertext: rows.map((r) => `Run ${r.run}<br>${fieldText(xKey, r)}<br>${fieldText(yKey, r)}`), hoverinfo: "text",
     }], {
-      height: 420, margin: { l: 60, r: 20, t: 10, b: 50 }, showlegend: false,
+      height: 420, margin: { l: 60, r: 20, t: 40, b: 50 }, showlegend: false,
+      title: { text: corrText(rows.map((r) => r[xKey]), rows.map((r) => r[yKey])), font: { size: 13 } },
       xaxis: axisFor(xKey, rows.map((r) => r[xKey])),
       yaxis: axisFor(yKey, rows.map((r) => r[yKey])),
     }, { responsive: true });
+  }
+
+  function offPairs(rows, key) {
+    const both = rows.filter((r) => !missing(r.angle_off_deg));
+    return [both.map((r) => r[key]), both.map((r) => r.angle_off_deg)];
   }
 
   function renderPolar() {
@@ -351,8 +387,10 @@
       marker: { size: 11, color: rows.map((r) => color(r.run - 1)) },
       hovertext: rows.map((r) => `Run ${r.run}<br>Heading: ${deg(r.heading_deg)}<br>${fieldText(rKey, r)}`), hoverinfo: "text",
     }], {
-      height: 420, margin: { l: 40, r: 40, t: 30, b: 30 }, legend: { orientation: "h", y: -0.05 },
+      height: 420, margin: { l: 40, r: 40, t: 40, b: 30 }, legend: { orientation: "h", y: -0.05 },
+      title: { text: `${FIELDS[rKey][0]} vs off downwind angle: ${corrText(...offPairs(rows, rKey))}`, font: { size: 13 } },
       polar: {
+        sector: polarSector([...rows.map((r) => r.heading_deg), dw]),
         angularaxis: { rotation: 90, direction: "clockwise", dtick: 45 },
         radialaxis: Object.assign(axisFor(rKey, values), { range: [lo, hi], title: { text: FIELDS[rKey][0] } }),
       },
@@ -389,6 +427,18 @@
       state.mapMode = el.value;
       renderAll(false);
     }));
+
+  const maxHr = document.getElementById("max-hr");
+  maxHr.addEventListener("change", () => {
+    const v = Number(maxHr.value);
+    if (Number.isInteger(v) && v > 0) {
+      state.maxHr = v;
+      renderRuns();
+      renderSplits();
+    } else {
+      maxHr.value = state.maxHr;
+    }
+  });
 
   document.getElementById("scatter-x").addEventListener("change", renderScatter);
   document.getElementById("scatter-y").addEventListener("change", renderScatter);

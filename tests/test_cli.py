@@ -30,7 +30,8 @@ def test_cli_missing_file(tmp_path, capsys):
     assert "error:" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("flag,value", [("--threshold", "0"), ("--min-duration", "0"), ("--merge-gap", "-1")])
+@pytest.mark.parametrize("flag,value", [("--threshold", "0"), ("--min-duration", "0"), ("--merge-gap", "-1"),
+                                        ("--max-hr", "0"), ("--max-hr", "180.5")])
 def test_cli_rejects_bad_values(tmp_path, sample_path, flag, value):
     with pytest.raises(SystemExit):
         main([str(sample_path), flag, value, "--out", str(tmp_path)])
@@ -44,3 +45,8 @@ def test_cli_rejects_unknown_timezone(tmp_path, sample_path):
 def test_cli_timezone_option(tmp_path, sample_path):
     assert main([str(sample_path), "--wind-dir", "0", "--tz", "UTC", "--no-pdf", "--out", str(tmp_path)]) == 0
     assert '"tz": "UTC"' in (tmp_path / "activity_24651972498.html").read_text(encoding="utf-8")
+
+
+def test_cli_max_hr_option(tmp_path, sample_path):
+    assert main([str(sample_path), "--wind-dir", "0", "--max-hr", "180", "--no-pdf", "--out", str(tmp_path)]) == 0
+    assert '"max_hr": 180' in (tmp_path / "activity_24651972498.html").read_text(encoding="utf-8")

@@ -3,7 +3,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import numpy as np
 import pytest
+
+from dw_analyzer.metrics import hr_zone
 
 RUNS_JS = Path(__file__).resolve().parents[1] / "dw_analyzer" / "report" / "static" / "runs.js"
 
@@ -34,3 +37,21 @@ def test_missing_values_sort_last():
     assert sort("hr_avg", True) == [1, 3, 2]
     assert sort("hr_avg", False) == [3, 1, 2]
     assert sort("back_up_s", False) == [3, 2, 1]
+
+
+def js(expr):
+    script = f"const DW = require({json.dumps(str(RUNS_JS))}); process.stdout.write(JSON.stringify({expr}));"
+    return json.loads(subprocess.run(["node", "-e", script], capture_output=True, text=True, check=True).stdout)
+
+
+def test_pearson_matches_numpy():
+    xs, ys = [1, 2, 3, 4, 5.5], [2.0, 1.0, 4.0, 3.5, 7.0]
+    assert js(f"DW.pearson({xs}, {ys})") == pytest.approx(float(np.corrcoef(xs, ys)[0, 1]))
+    assert js("DW.pearson([1, 2], [3, 4])") is None
+    assert js("DW.pearson([1, 2, 3], [5, 5, 5])") is None
+
+
+def test_hr_zone_matches_python():
+    pcts = [10, 49.9, 50, 69.9, 70, 80, 89.99, 90, 105]
+    assert js(f"{pcts}.map(DW.hrZone)") == [hr_zone(p) for p in pcts]
+    assert js("DW.hrZone(null)") is None

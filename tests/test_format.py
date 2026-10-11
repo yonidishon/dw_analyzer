@@ -1,9 +1,11 @@
 import math
 
+import pytest
+
 from dw_analyzer.analysis import analyze
 from dw_analyzer.report.common import run_rule, subtitle, title, wind_label
 from dw_analyzer.report.format import (
-    RUN_COLUMNS, SPLIT_COLUMNS, fmt_deg, fmt_distance, fmt_duration, fmt_int, fmt_kmh, fmt_num, fmt_pace,
+    RUN_COLUMNS, SPLIT_COLUMNS, fmt_deg, fmt_distance, fmt_duration, fmt_hr_zone, fmt_int, fmt_kmh, fmt_num, fmt_pace,
     overall_tiles, table_rows,
 )
 from dw_analyzer.wind import Wind
@@ -67,3 +69,26 @@ def test_combined_tiles(sample_path):
     assert "Avg speed / pace foiling" in tiles
     assert tiles["Best run"].count(" · ") == 2 and tiles["Best run"].endswith(" /km")
     assert tiles["Longest run"].count(" · ") == 2 and tiles["Longest run"].endswith(" /km")
+
+
+def test_fmt_hr_zone():
+    assert fmt_hr_zone(83.2) == "Z4 (83%)"
+    assert fmt_hr_zone(45.0) == "Z0 (45%)"
+    assert fmt_hr_zone(79.6) == "Z3 (79%)"  # truncated so the % never contradicts the zone
+    assert fmt_hr_zone(float("nan")) == "-"
+
+
+def test_zone_and_distance_share_columns(sample_path):
+    a = analyze(sample_path, wind_dir=0, max_hr=180)
+    run_labels = [c[0] for c in RUN_COLUMNS]
+    assert run_labels[3] == "Distance / % of run"
+    assert run_labels[run_labels.index("HR max") + 1] == "HR zone"
+    split_labels = [c[0] for c in SPLIT_COLUMNS]
+    assert split_labels[split_labels.index("HR max") + 1] == "HR zone"
+    row = table_rows(a.run_rows, RUN_COLUMNS)[0]
+    r0 = a.run_rows[0]
+    assert row[3] == f"{fmt_distance(r0['distance_m'])} / {r0['distance_pct']:.0f}%"
+    assert row[run_labels.index("HR zone")] == fmt_hr_zone(100 * r0["hr_avg"] / 180)
+    total = sum(r["distance_pct"] for r in a.run_rows)
+    assert total == pytest.approx(100 * sum(r["distance_m"] for r in a.run_rows) / a.overall["distance_m"])
+    assert total < 100

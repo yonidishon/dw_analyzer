@@ -27,6 +27,7 @@ Writes `out/<gpx name>.html` and `out/<gpx name>.pdf`.
 | `--merge-gap` | 3 | Dips below the threshold shorter than this many seconds do not end a run |
 | `--wind-dir` | none | Direction the wind comes from, in degrees. If not given, Open-Meteo is queried, and if that fails the mean course direction is used as downwind |
 | `--tz` | `Asia/Jerusalem` | IANA time zone for the times shown in the reports (Israel time, including daylight saving) |
+| `--max-hr` | 188 | Max heart rate in bpm, used for the HR zone columns |
 | `--out` | `out` | Output directory |
 | `--no-pdf` | off | Only write the HTML report |
 
@@ -40,14 +41,16 @@ Writes `out/<gpx name>.html` and `out/<gpx name>.pdf`.
 
 A run is a period where speed is above the threshold for at least `--min-duration` seconds. Short dips below the threshold (under `--merge-gap` seconds) are merged into the run. In the HTML report the threshold slider re-detects runs and updates the runs table, run statistics, map and timeline. Click a runs table header (#, duration, distance, pace, max 5 s, HR avg, HR max, back up) to sort by it; click again to reverse. The splits table sorts the same way by #, duration, avg km/h, pace, max 5 s, HR avg and HR max.
 
-The speed and heart rate graph also shows cumulative distance (km, right-hand axis); hovering it shows the distance as a percentage of the whole session.
+The speed and heart rate graph also shows cumulative distance (km, right-hand axis); hovering the graph shows the values of all lines at that time, with the distance also as a percentage of the whole session.
 
 At the bottom of the HTML report, the run analysis section has two plots where each dot is a run (both follow the threshold slider):
 
-- a scatter plot with the x-axis chosen from pace, duration or distance and the y-axis from HR avg, HR max or back up time
-- a polar plot (north up, clockwise) where the angle is the run's mean heading and the radius is chosen from pace, HR avg, HR max, VMG, distance or duration; a fixed arrow from the centre points downwind
+- a scatter plot with the x-axis chosen from pace, duration or distance and the y-axis from HR avg, HR max or back up time, titled with the Pearson correlation (r) of the two axes
+- a polar plot (north up, clockwise) where the angle is the run's mean heading and the radius is chosen from pace, HR avg, HR max, VMG, distance or duration; a fixed arrow from the centre points downwind. The plot zooms to the sector holding the run headings and the downwind direction, and its title shows the correlation between the radius and the runs' off downwind angle
 
 These plots are HTML only.
+
+The runs and splits tables have an HR zone column: the zone of the average HR plus the average as % of max HR (`--max-hr`, also editable in the HTML banner left of the time zone), e.g. `Z4 (83%)`. Zones by % of max HR: Z1 50-60, Z2 60-70, Z3 70-80, Z4 80-90, Z5 90 and up, Z0 below 50; the % is truncated so it always matches the zone. The runs table "Distance / % of run" column shows each run's distance and its share of the whole session distance.
 
 ## Metrics
 

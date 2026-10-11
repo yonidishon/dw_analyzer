@@ -50,7 +50,8 @@ def track_payload(track) -> dict:
 def payload(a) -> dict:
     return {
         "meta": {"title": title(a), "wind_label": wind_label(a.wind), "downwind_deg": a.wind.downwind_deg, "tz": a.tz},
-        "params": {"threshold_kmh": a.threshold_kmh, "min_duration_s": a.min_duration_s, "merge_gap_s": a.merge_gap_s},
+        "params": {"threshold_kmh": a.threshold_kmh, "min_duration_s": a.min_duration_s, "merge_gap_s": a.merge_gap_s,
+                   "max_hr": a.max_hr},
         "track": track_payload(a.track),
         "overall": clean(a.overall),
         "splits": {str(km): clean(rows) for km, rows in a.splits.items()},
@@ -65,6 +66,7 @@ def render_html(a, out_path) -> Path:
         session_summary=session_summary(a),
         run_rule=run_rule(a, with_threshold=False),
         threshold=a.threshold_kmh,
+        max_hr=a.max_hr,
         css=static_text("report.css"),
         plotly_js=plotly.offline.get_plotlyjs(),
         data_json=data_json,

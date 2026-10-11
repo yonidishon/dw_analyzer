@@ -6,6 +6,8 @@ from dw_analyzer.angles import circ_mean_deg, signed_diff_deg
 
 NAN = float("nan")
 BEST_RUN_MIN_S = 60  # shorter runs do not compete for "best run"
+DEFAULT_MAX_HR = 188
+HR_ZONES_PCT = (50, 60, 70, 80, 90)  # lower bounds of Z1-Z5 in % of max HR; below Z1 is Z0
 
 
 def add_vmg(track: pd.DataFrame, downwind_deg: float) -> pd.DataFrame:
@@ -128,3 +130,22 @@ def overall_stats(track: pd.DataFrame, runs, run_rows) -> dict:
         "avg_gap_s": float(np.mean(gaps)) if gaps else NAN,
         "max_gap_s": float(max(gaps)) if gaps else NAN,
     }
+
+
+def hr_zone(pct):
+    """Zone 0-5 for an HR given as % of max HR; None when unknown. Mirrored by hrZone() in runs.js."""
+    if pct is None or not np.isfinite(pct):
+        return None
+    return sum(pct >= bound for bound in HR_ZONES_PCT)
+
+
+def add_hr_pct(rows, max_hr):
+    """Add hr_pct_max (average HR as % of max HR) to each row in place."""
+    for row in rows:
+        row["hr_pct_max"] = 100 * row["hr_avg"] / max_hr
+
+
+def add_distance_pct(run_rows, total_m):
+    """Add distance_pct (run distance as % of the session distance) to each run row in place."""
+    for row in run_rows:
+        row["distance_pct"] = 100 * row["distance_m"] / total_m if total_m else NAN

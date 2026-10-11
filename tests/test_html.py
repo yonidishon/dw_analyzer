@@ -22,7 +22,7 @@ def test_html_report(tmp_path, sample_path):
     data = embedded_data(text)
     assert len(data["track"]["speed"]) == len(a.track)
     assert set(data["splits"]) == {"1", "2", "5"}
-    assert data["params"] == {"threshold_kmh": 12.0, "min_duration_s": 10, "merge_gap_s": 3}
+    assert data["params"] == {"threshold_kmh": 12.0, "min_duration_s": 10, "merge_gap_s": 3, "max_hr": 188}
     assert data["meta"]["title"] == "Downwind session 2026-10-08"
     assert "Plotly" in text
     assert "detectRuns" in text
@@ -58,3 +58,10 @@ def test_html_run_analysis_tools(tmp_path):
     assert embedded_data(text)["meta"]["downwind_deg"] == a.wind.downwind_deg == 270
     for el in ('id="scatter-x"', 'id="scatter-y"', 'id="polar-r"', 'id="scatter"', 'id="polar"'):
         assert el in text
+
+
+def test_html_max_hr_input_left_of_timezone(tmp_path):
+    gpx = write_gpx(tmp_path / "t.gpx", make_raw([6.0] * 120))
+    text = render_html(analyze(gpx, wind_dir=0, max_hr=175), tmp_path / "r.html").read_text(encoding="utf-8")
+    assert 'id="max-hr"' in text and 'value="175"' in text
+    assert text.index('id="max-hr"') < text.index('id="tz"')
