@@ -10,9 +10,9 @@ h1 { font-size: 16pt; margin: 0 0 2pt; }
 h2 { font-size: 11pt; margin: 12pt 0 4pt; }
 .sub { color: #6e6e73; margin: 0; }
 .tiles { display: flex; flex-wrap: wrap; }
-.tile { width: 18%; margin: 0 2% 4pt 0; background: #f5f5f7; border-radius: 4pt; padding: 3pt 6pt; }
+.tile { box-sizing: border-box; width: 23%; margin: 0 2% 4pt 0; background: #f5f5f7; border-radius: 4pt; padding: 3pt 6pt; }
 .tile .label { display: block; color: #6e6e73; font-size: 7.5pt; }
-.tile .value { font-weight: bold; }
+.tile .value { display: block; font-weight: bold; white-space: pre-line; }
 img { width: 100%; }
 .side { display: flex; align-items: flex-start; }
 .side .map { width: 40%; margin-right: 2%; }

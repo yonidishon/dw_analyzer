@@ -61,24 +61,27 @@
     state.highlight = null;
   }
 
-  // Same labels and order as overall_tiles() in format.py
+  const speeds = (vs) => (vs.every(missing) ? "-" : vs.map((v) => num(v)).join(" / ") + " km/h");
+  const paces = (vs) => (vs.every(missing) ? "-"
+    : vs.map((v) => (missing(v) || v <= 0 ? "-" : pace(3600 / v).replace(" /km", ""))).join(" / ") + " /km");
+  const speedPace = (v, p) => (missing(v) ? "-" : `${kmh(v)} · ${pace(p)}`);
+  const runSummary = (d, m, p) => (missing(d) ? "-" : `${duration(d)} · ${dist(m)} · ${pace(p)}`);
+
+  // Same labels, order and values as overall_tiles() in format.py; "\n" starts a second line
   function tiles(o) {
+    const bestDist = [o.best_100m_kmh, o.best_500m_kmh, o.best_1000m_kmh];
     return [
       ["Distance", dist(o.distance_m)],
       ["Duration", duration(o.duration_s)],
-      ["Avg speed", kmh(o.avg_speed_kmh)],
-      ["Avg pace", pace(o.pace_s_per_km)],
-      ["Max speed (5 s)", kmh(o.max_5s_kmh)],
-      ["Best 10 s", kmh(o.best_10s_kmh)],
-      ["Best 30 s", kmh(o.best_30s_kmh)],
-      ["Best 100 m", kmh(o.best_100m_kmh)],
-      ["Best 500 m", kmh(o.best_500m_kmh)],
+      ["Avg speed / pace", speedPace(o.avg_speed_kmh, o.pace_s_per_km)],
+      ["Max speed 5 s / 10 s / 30 s", speeds([o.max_5s_kmh, o.best_10s_kmh, o.best_30s_kmh])],
+      ["Best 100 m / 500 m / 1000 m", `${speeds(bestDist)}\n${paces(bestDist)}`],
       ["Runs", String(o.n_runs)],
       ["Time foiling", `${duration(o.time_foiling_s)} (${num(o.pct_foiling, 0)}%)`],
-      ["Avg speed foiling", kmh(o.avg_speed_foiling_kmh)],
-      ["Pace foiling", pace(o.pace_foiling_s_per_km)],
+      ["Avg speed / pace foiling", speedPace(o.avg_speed_foiling_kmh, o.pace_foiling_s_per_km)],
       ["VMG foiling", kmh(o.vmg_foiling_kmh)],
-      ["Longest run", missing(o.longest_run_s) ? "-" : `${duration(o.longest_run_s)} / ${dist(o.longest_run_m)}`],
+      ["Best run", runSummary(o.best_run_s, o.best_run_m, o.best_run_pace_s_per_km)],
+      ["Longest run", runSummary(o.longest_run_s, o.longest_run_m, o.longest_run_pace_s_per_km)],
       ["Avg gap between runs", duration(o.avg_gap_s)],
       ["Longest gap", duration(o.max_gap_s)],
       ["Heart rate avg / max", missing(o.hr_avg) ? "-" : `${int(o.hr_avg)} / ${int(o.hr_max)} bpm`],

@@ -5,6 +5,7 @@ import pandas as pd
 from dw_analyzer.angles import circ_mean_deg, signed_diff_deg
 
 NAN = float("nan")
+BEST_RUN_MIN_S = 60  # shorter runs do not compete for "best run"
 
 
 def add_vmg(track: pd.DataFrame, downwind_deg: float) -> pd.DataFrame:
@@ -44,6 +45,7 @@ def best_efforts(seg: pd.DataFrame) -> dict:
         "best_30s_kmh": best_time_window(speed, gap, 30),
         "best_100m_kmh": best_distance(dist, gap, 100),
         "best_500m_kmh": best_distance(dist, gap, 500),
+        "best_1000m_kmh": best_distance(dist, gap, 1000),
     }
 
 
@@ -98,6 +100,8 @@ def overall_stats(track: pd.DataFrame, runs, run_rows) -> dict:
     t_foil = int(mask.sum())
     avg_foil = float(foil["step_m"].sum()) / t_foil * 3.6 if t_foil else NAN
     longest = max(run_rows, key=lambda row: row["duration_s"]) if run_rows else None
+    candidates = [row for row in run_rows if row["duration_s"] >= BEST_RUN_MIN_S]
+    best = max(candidates, key=lambda row: row["avg_speed_kmh"]) if candidates else None
     gaps = [b.start - a.end for a, b in zip(runs, runs[1:])]
     return {
         "start_time": track["time"].iloc[0].isoformat(),
@@ -117,6 +121,10 @@ def overall_stats(track: pd.DataFrame, runs, run_rows) -> dict:
         "vmg_foiling_kmh": float(foil["vmg_kmh"].mean()) if t_foil else NAN,
         "longest_run_s": float(longest["duration_s"]) if longest else NAN,
         "longest_run_m": longest["distance_m"] if longest else NAN,
+        "longest_run_pace_s_per_km": longest["pace_s_per_km"] if longest else NAN,
+        "best_run_s": float(best["duration_s"]) if best else NAN,
+        "best_run_m": best["distance_m"] if best else NAN,
+        "best_run_pace_s_per_km": best["pace_s_per_km"] if best else NAN,
         "avg_gap_s": float(np.mean(gaps)) if gaps else NAN,
         "max_gap_s": float(max(gaps)) if gaps else NAN,
     }

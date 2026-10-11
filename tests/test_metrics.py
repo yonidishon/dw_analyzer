@@ -121,5 +121,36 @@ def test_overall_without_runs():
     assert o["n_runs"] == 0
     assert o["time_foiling_s"] == 0
     assert o["pct_foiling"] == 0
-    for key in ["avg_speed_foiling_kmh", "pace_foiling_s_per_km", "vmg_foiling_kmh", "longest_run_s", "longest_run_m", "avg_gap_s", "max_gap_s"]:
+    for key in ["avg_speed_foiling_kmh", "pace_foiling_s_per_km", "vmg_foiling_kmh", "longest_run_s", "longest_run_m",
+                "longest_run_pace_s_per_km", "best_run_s", "best_run_m", "best_run_pace_s_per_km", "avg_gap_s", "max_gap_s"]:
         assert math.isnan(o[key]), key
+
+
+def test_best_1000m():
+    t = track_from([5.0] * 300)
+    assert best_efforts(t)["best_1000m_kmh"] == pytest.approx(18.0, abs=0.05)
+    assert math.isnan(best_efforts(track_from([5.0] * 100))["best_1000m_kmh"])
+
+
+def test_best_run_needs_one_minute_and_longest_run_pace():
+    # a 20 s burst at 32 km/h, then a 90 s run at 21.6 km/h, then a 70 s run at 25.2 km/h
+    t = track_from([0.0] * 30 + [9.0] * 20 + [0.0] * 30 + [6.0] * 90 + [0.0] * 30 + [7.0] * 70 + [0.0] * 30)
+    runs = detect_runs(t["speed_kmh"].to_numpy(), 12, 10, 3)
+    rows = run_stats(t, runs)
+    assert len(rows) == 3
+    o = overall_stats(t, runs, rows)
+    best = rows[2]
+    assert o["best_run_s"] == best["duration_s"]
+    assert o["best_run_m"] == pytest.approx(best["distance_m"])
+    assert o["best_run_pace_s_per_km"] == pytest.approx(best["pace_s_per_km"])
+    assert o["longest_run_s"] == rows[1]["duration_s"]
+    assert o["longest_run_pace_s_per_km"] == pytest.approx(rows[1]["pace_s_per_km"])
+
+
+def test_no_best_run_when_all_runs_short():
+    t = track_from([0.0] * 30 + [9.0] * 40 + [0.0] * 30)
+    runs = detect_runs(t["speed_kmh"].to_numpy(), 12, 10, 3)
+    o = overall_stats(t, runs, run_stats(t, runs))
+    assert o["n_runs"] == 1
+    assert math.isnan(o["best_run_s"])
+    assert not math.isnan(o["longest_run_pace_s_per_km"])

@@ -37,7 +37,6 @@ def test_tables_and_tiles(sample_path):
     tiles = overall_tiles(a.overall, wind_label(a.wind))
     labels = [t[0] for t in tiles]
     assert labels[0] == "Distance"
-    assert "Max speed (5 s)" in labels and "Avg pace" in labels and "Pace foiling" in labels
     assert all(isinstance(v, str) for _, v in tiles)
     assert title(a) == "Downwind session 2026-10-08"
     assert subtitle(a).startswith("2026-10-08 15:42 (Asia/Jerusalem)")
@@ -49,4 +48,22 @@ def test_tiles_without_runs(sample_path):
     tiles = dict(overall_tiles(a.overall, wind_label(a.wind)))
     assert tiles["Runs"] == "0"
     assert tiles["Longest run"] == "-"
-    assert tiles["Avg speed foiling"] == "-"
+    assert tiles["Avg speed / pace foiling"] == "-"
+    assert tiles["Best run"] == "-"
+
+
+def test_combined_tiles(sample_path):
+    a = analyze(sample_path, wind_dir=0)
+    tiles = dict(overall_tiles(a.overall, wind_label(a.wind)))
+    assert list(tiles)[:6] == ["Distance", "Duration", "Avg speed / pace", "Max speed 5 s / 10 s / 30 s",
+                               "Best 100 m / 500 m / 1000 m", "Runs"]
+    for gone in ["Avg pace", "Best 10 s", "Best 500 m", "Pace foiling"]:
+        assert gone not in tiles
+    assert tiles["Avg speed / pace"].count(" km/h · ") == 1 and tiles["Avg speed / pace"].endswith(" /km")
+    assert tiles["Max speed 5 s / 10 s / 30 s"].count(" / ") == 2
+    speeds, paces = tiles["Best 100 m / 500 m / 1000 m"].split("\n")
+    assert speeds.endswith("km/h") and speeds.count(" / ") == 2
+    assert paces.endswith("/km") and paces.count(" / ") == 2
+    assert "Avg speed / pace foiling" in tiles
+    assert tiles["Best run"].count(" · ") == 2 and tiles["Best run"].endswith(" /km")
+    assert tiles["Longest run"].count(" · ") == 2 and tiles["Longest run"].endswith(" /km")

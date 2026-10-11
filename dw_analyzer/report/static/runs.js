@@ -90,9 +90,12 @@
     ));
   }
 
+  const BEST_RUN_MIN_S = 60; // shorter runs do not compete for "best run" (metrics.py)
+  const runPace = (r) => (r && r.dist > 0 ? (r.dur / r.dist) * 1000 : null);
+
   function foilStats(tr, runs) {
     let t = 0, dist = 0, vmgSum = 0, vmgN = 0;
-    let longest = null;
+    let longest = null, best = null;
     for (const r of runs) {
       let runDist = 0;
       for (let i = r.start; i < r.end; i++) {
@@ -101,7 +104,9 @@
       }
       t += r.end - r.start;
       dist += runDist;
-      if (longest === null || r.end - r.start > longest.dur) longest = { dur: r.end - r.start, dist: runDist };
+      const run = { dur: r.end - r.start, dist: runDist };
+      if (longest === null || run.dur > longest.dur) longest = run;
+      if (run.dur >= BEST_RUN_MIN_S && (best === null || run.dist / run.dur > best.dist / best.dur)) best = run;
     }
     const gaps = runs.slice(1).map((r, i) => r.start - runs[i].end);
     const avg = t ? (dist / t) * 3.6 : null;
@@ -114,6 +119,10 @@
       vmg_foiling_kmh: vmgN ? vmgSum / vmgN : null,
       longest_run_s: longest ? longest.dur : null,
       longest_run_m: longest ? longest.dist : null,
+      longest_run_pace_s_per_km: runPace(longest),
+      best_run_s: best ? best.dur : null,
+      best_run_m: best ? best.dist : null,
+      best_run_pace_s_per_km: runPace(best),
       avg_gap_s: gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : null,
       max_gap_s: gaps.length ? Math.max(...gaps) : null,
     };

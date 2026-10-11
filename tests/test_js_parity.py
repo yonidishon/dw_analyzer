@@ -18,6 +18,8 @@ ROW_TOL = {"distance_m": 1.0, "avg_speed_kmh": 0.01, "pace_s_per_km": 0.5, "max_
            "vmg_kmh": 0.01, "angle_off_deg": 0.1, "hr_avg": 0.1, "hr_max": 0.1, "back_up_s": 0}
 FOIL_TOL = {"n_runs": 0, "time_foiling_s": 0, "pct_foiling": 1e-9, "avg_speed_foiling_kmh": 0.01,
             "pace_foiling_s_per_km": 0.5, "vmg_foiling_kmh": 0.01, "longest_run_s": 0, "longest_run_m": 1.0,
+            "longest_run_pace_s_per_km": 0.5, "best_run_pace_s_per_km": 0.5,
+            # best_run_s / best_run_m skipped: runs with near-equal pace can tie-break differently on rounded steps
             "avg_gap_s": 1e-9, "max_gap_s": 0}
 
 pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")

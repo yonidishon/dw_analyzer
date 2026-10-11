@@ -44,7 +44,7 @@ A run is a period where speed is above the threshold for at least `--min-duratio
 
 All speeds are in km/h. Pace is in min/km.
 
-- **Overall:** distance, duration, average speed and pace, max speed (best 5 s average), best 10 s, 30 s, 100 m and 500 m, number of runs, time and % foiling, average speed and pace while foiling, VMG downwind while foiling, longest run, average and longest gap between runs, heart rate, air temperature, wind direction and its source.
+- **Overall:** distance, duration, average speed and pace, max speed as best 5 s / 10 s / 30 s average, best 100 m / 500 m / 1000 m (speed and pace), number of runs, time and % foiling, average speed and pace while foiling, VMG downwind while foiling, best run (fastest average pace among runs of at least 1 minute: duration, distance, pace), longest run (duration, distance, pace), average and longest gap between runs, heart rate, air temperature, wind direction and its source.
 - **Per split (1, 2 or 5 km):** distance, duration, average speed, pace, max speed (5 s), heading, VMG downwind, heart rate.
 - **Per run:** start time, duration, distance, average speed, pace, max speed (5 s), heading, angle off downwind, VMG downwind, heart rate, time to get back up since the previous run.
 
